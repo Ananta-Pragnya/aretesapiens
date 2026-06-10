@@ -31,9 +31,18 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "aretesapiens-dev-key")
 
 USER_ID = "demo"
 
-# Seed jurisdictions and run initial checks at startup
-load_jurisdictions()
-threading.Thread(target=lambda: check_all(USER_ID), daemon=True).start()
+# Seed jurisdictions and run initial checks in background (avoids blocking gunicorn startup)
+def _startup():
+    try:
+        load_jurisdictions()
+    except Exception as e:
+        print(f"[startup] jurisdiction load error: {e}")
+    try:
+        check_all(USER_ID)
+    except Exception as e:
+        print(f"[startup] check_all error: {e}")
+
+threading.Thread(target=_startup, daemon=True).start()
 
 
 # ── Page ───────────────────────────────────────────────────────────────────────

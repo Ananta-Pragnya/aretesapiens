@@ -6,8 +6,12 @@ JURISDICTIONS_DIR = os.path.join(os.path.dirname(__file__), "jurisdictions")
 
 
 def load_jurisdictions():
-    db = get_db()
-    count = db.jurisdictions.count_documents({})
+    try:
+        db = get_db()
+        count = db.jurisdictions.count_documents({})
+    except Exception as e:
+        print(f"[jurisdictions] MongoDB connection error: {e}")
+        return
     if count >= 6:
         print(f"[jurisdictions] already seeded ({count} records), skipping")
         return
