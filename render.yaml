@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: aretesapiens
+    runtime: docker
+    plan: free
+    region: singapore
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: FLASK_SECRET_KEY
+        sync: false
+      - key: PORT
+        value: "8080"
