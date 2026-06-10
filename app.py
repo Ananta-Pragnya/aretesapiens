@@ -21,7 +21,7 @@ from mongo_client import (
 from gemini_client import (
     explain_subscription, explain_bill_spike,
     explain_warranty, explain_grocery_trend,
-    detect_jurisdiction, analyze_document, answer_followup,
+    detect_jurisdiction_fast, analyze_document, answer_followup,
 )
 from checker import check_all
 from jurisdiction_loader import load_jurisdictions
@@ -37,6 +37,10 @@ def _startup():
         load_jurisdictions()
     except Exception as e:
         print(f"[startup] jurisdiction load error: {e}")
+    try:
+        seed_demo(USER_ID)
+    except Exception as e:
+        print(f"[startup] seed_demo error: {e}")
     try:
         check_all(USER_ID)
     except Exception as e:
@@ -99,10 +103,8 @@ def api_vaakil_analyze():
     if not doc_text:
         return jsonify({"error": "No document text provided"}), 400
 
-    # Step 1: Detect jurisdiction
-    detection = detect_jurisdiction(doc_text)
-    country_code = detection.get("country_code", "IN")
-    doc_type = detection.get("doc_type", "other")
+    # Step 1: Fast keyword-based detection (no API call — instant)
+    country_code, country_name, doc_type = detect_jurisdiction_fast(doc_text)
 
     # Step 2: Fetch jurisdiction ruleset from MongoDB
     jurisdiction_data = get_jurisdiction(country_code)

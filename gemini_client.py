@@ -37,7 +37,58 @@ def _parse_json(text):
         return None
 
 
-# ── Vaakil: Jurisdiction Detection ────────────────────────────────────────────
+# ── Vaakil: Fast keyword-based detection (no API call) ────────────────────────
+
+def detect_jurisdiction_fast(doc_text):
+    """Instant country + doc-type detection via keyword matching. No Gemini call."""
+    text = doc_text[:3000].lower()
+
+    # Country detection — most specific signals first
+    if any(x in text for x in ['₹', 'inr', 'sarfaesi', ' rbi ', 'sebi ', 'hdfc', 'icici', 'bescom',
+                                 'nbfc', 'ncdrc', 'rupee', 'lakh', 'crore', 'india', 'indian']):
+        country_code, country_name = 'IN', 'India'
+    elif any(x in text for x in ['₦', 'ngn', 'naira', 'cbn ', 'efcc', 'fccpc', 'nigeria', 'nigerian']):
+        country_code, country_name = 'NG', 'Nigeria'
+    elif any(x in text for x in ['£', 'gbp', 'hmrc', 'fca ', 'acas ', 'county court', 'ofgem',
+                                   'england', 'wales', 'scotland', 'uk ', 'united kingdom']):
+        country_code, country_name = 'GB', 'United Kingdom'
+    elif any(x in text for x in ['a$', 'aud', 'vcat', 'ncat', 'qcat', 'afca', 'accc', 'centrelink',
+                                   'fair work', 'australia', 'australian']):
+        country_code, country_name = 'AU', 'Australia'
+    elif any(x in text for x in ['c$', 'cad', 'cra ', ' ltb ', ' rtb ', 'canada', 'canadian',
+                                   'ontario', 'british columbia', 'alberta']):
+        country_code, country_name = 'CA', 'Canada'
+    elif any(x in text for x in ['fdcpa', 'cfpb', 'eeoc', ' irs ', 'osha ', 'usd', 'united states',
+                                   'american', 'federal court', 'bankruptcy court']):
+        country_code, country_name = 'US', 'United States'
+    elif '$' in text:
+        country_code, country_name = 'US', 'United States'
+    else:
+        country_code, country_name = 'IN', 'India'
+
+    # Doc type detection
+    if any(x in text for x in ['debt', 'loan', 'recovery', 'outstanding', 'overdue', 'collection',
+                                 'arrears', 'repayment', 'default notice', 'demand notice']):
+        doc_type = 'debt_collection'
+    elif any(x in text for x in ['evict', 'vacate', 'quit notice', 'tenancy', 'terminate your tenancy',
+                                   'leave the premises', 'notice to quit', 'possession']):
+        doc_type = 'eviction_notice'
+    elif any(x in text for x in ['summons', 'writ', 'lawsuit', 'filed a claim', 'statement of claim',
+                                   'plaintiff', 'defendant', 'court order']):
+        doc_type = 'court_summons'
+    elif any(x in text for x in ['terminat', 'dismiss', 'retrench', 'layoff', 'redundan',
+                                   'employment end', 'last working day', 'separation']):
+        doc_type = 'employment_termination'
+    elif any(x in text for x in ['consumer', 'refund', 'defective', 'warranty claim',
+                                   'not fit for purpose', 'misleading']):
+        doc_type = 'consumer_notice'
+    else:
+        doc_type = 'other'
+
+    return country_code, country_name, doc_type
+
+
+# ── Vaakil: Jurisdiction Detection (Gemini fallback — kept for reference) ─────
 
 def detect_jurisdiction(doc_text):
     """Returns {"country_code": "IN", "country_name": "India", "doc_type": "debt_collection", "confidence": 0.95}"""
