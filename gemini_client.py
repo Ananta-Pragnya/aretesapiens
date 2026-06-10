@@ -1,5 +1,6 @@
 import os
 import json
+import concurrent.futures
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
@@ -10,15 +11,21 @@ _client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 MODEL = "gemini-2.0-flash"
 _CONFIG = types.GenerateContentConfig(temperature=0.3)
 _CONFIG_STRICT = types.GenerateContentConfig(temperature=0.0)
+_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 
-def _generate(prompt, strict=False):
+def _generate(prompt, strict=False, timeout=22):
     try:
         cfg = _CONFIG_STRICT if strict else _CONFIG
-        response = _client.models.generate_content(
+        future = _EXECUTOR.submit(
+            _client.models.generate_content,
             model=MODEL, contents=prompt, config=cfg
         )
+        response = future.result(timeout=timeout)
         return response.text.strip()
+    except concurrent.futures.TimeoutError:
+        print(f"[gemini] timed out after {timeout}s")
+        return None
     except Exception as e:
         print(f"[gemini] error: {e}")
         return None
@@ -141,47 +148,18 @@ def analyze_document(doc_text, jurisdiction_data, doc_type):
     template = doc_type_info.get("template_response", "")
     country_name = jurisdiction_data.get("country_name", "Unknown")
 
-    prompt = f"""You are an expert legal analyst for {country_name}. A user has uploaded a legal document and needs a plain-language analysis.
+    prompt = f"""Legal analyst for {country_name}. Analyze this {doc_type} document. Law: {governing_law}.
 
-GOVERNING LAW: {governing_law}
-DOCUMENT TYPE: {doc_type}
-RESPONSE WINDOW: {response_window} days
+Rights: {rights_list}
+Violations to check: {violations_list}
 
-KNOWN RIGHTS IN THIS JURISDICTION:
-{rights_list}
+DOCUMENT:
+{doc_text[:2500]}
 
-COMMON VIOLATIONS TO LOOK FOR:
-{violations_list}
+Return ONLY this JSON (no markdown):
+{{"plain_summary":"2-3 sentences what this document demands","what_it_means":"practical situation the user is in","issues_found":[{{"severity":"high|medium|low","title":"issue title","excerpt":"exact quoted text","explanation":"why illegal/problematic"}}],"your_rights":["right1","right2","right3","right4"],"action_plan":[{{"day":"Day 1-2","action":"what to do"}},{{"day":"Day 3-4","action":"what to do"}},{{"day":"Day 5-7","action":"what to do"}}],"lawyer_needed":true,"lawyer_assessment":"can they self-handle or need lawyer","template_response":"full professional response letter"}}
 
-DOCUMENT TEXT:
----
-{doc_text[:4000]}
----
-
-Analyze this document thoroughly and return ONLY a JSON object with this exact structure:
-{{
-  "plain_summary": "2-3 sentence plain English summary of what this document is and what it demands",
-  "what_it_means": "3-4 sentence explanation of the practical situation the user is in",
-  "issues_found": [
-    {{
-      "severity": "high|medium|low",
-      "title": "brief title of the issue",
-      "excerpt": "the exact problematic text quoted from the document (keep short)",
-      "explanation": "why this is an issue and what law it may violate"
-    }}
-  ],
-  "your_rights": ["list of 4-6 specific rights the user has in this situation"],
-  "action_plan": [
-    {{"day": "Day 1-2", "action": "specific action to take"}},
-    {{"day": "Day 3-4", "action": "specific action to take"}},
-    {{"day": "Day 5-7", "action": "specific action to take"}}
-  ],
-  "lawyer_needed": true or false,
-  "lawyer_assessment": "honest 2-3 sentence assessment: can they handle this themselves or do they need a lawyer, and why",
-  "template_response": "a complete professional response letter the user can send"
-}}
-
-Find REAL issues in the document text — quote actual problematic phrases. If the document appears legitimate and has no violations, say so in issues_found as an empty array and explain in plain_summary. Return only valid JSON."""
+Quote real text from the document for issues_found. Return valid JSON only."""
 
     result = _generate(prompt, strict=True)
     parsed = _parse_json(result)

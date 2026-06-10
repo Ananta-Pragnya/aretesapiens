@@ -519,14 +519,22 @@ async function analyzeDocument() {
     if (selectedFile) fd.append('file', selectedFile);
     if (text) fd.append('text', text);
     fd.append('session_id', genId());
-    const res = await fetch('/api/vaakil/analyze', { method: 'POST', body: fd });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 28000);
+    let res;
+    try {
+      res = await fetch('/api/vaakil/analyze', { method: 'POST', body: fd, signal: controller.signal });
+    } finally { clearTimeout(timer); }
     const data = await res.json();
     if (!res.ok) { toast(data.error || 'Analysis failed'); return; }
     currentSessionId = data.session_id;
     currentAnalysis = data.analysis;
     renderResults(data.analysis);
     showResultsSection();
-  } catch (e) { toast('Network error'); }
+  } catch (e) {
+    if (e.name === 'AbortError') toast('Analysis timed out — try pasting shorter text');
+    else toast('Network error: ' + e.message);
+  }
   finally {
     btn.disabled = false;
     document.getElementById('analyze-spinner').classList.add('hidden');
