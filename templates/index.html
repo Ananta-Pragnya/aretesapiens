@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AreteSapiens — Household Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --night:#0A0C10;--surface:#111318;--s2:#181B22;--s3:#1D2030;
+  --border:#1F2535;--b2:#283048;--text:#E8EAF0;--muted:#6B7280;--faint:#374151;
+  --pulse:#00E5A0;--pd:rgba(0,229,160,.10);
+  --warn:#F59E0B;--wd:rgba(245,158,11,.10);
+  --danger:#FF4D6D;--dd:rgba(255,77,109,.10);
+  --ff:'Space Grotesk',sans-serif;--fb:'Inter',sans-serif;--fm:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--fb);background:var(--night);color:var(--text);font-size:13px;line-height:1.5}
+.app{display:grid;grid-template-columns:220px 1fr;height:100vh}
+
+/* sidebar */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sb-logo{padding:20px 18px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.logo-mark{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#00E5A0,#00B37D);display:flex;align-items:center;justify-content:center;font-family:var(--ff);font-weight:700;font-size:14px;color:#000;flex-shrink:0}
+.logo-text{font-family:var(--ff);font-weight:700;font-size:14px}
+.logo-sub{font-size:9.5px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-top:1px}
+.nav{flex:1;padding:10px 0;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;border-left:2px solid transparent;transition:all .15s;color:var(--muted);font-size:13px;font-weight:500;user-select:none}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.nav-item.active{color:var(--pulse);border-left-color:var(--pulse);background:var(--pd)}
+.nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--danger);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;font-family:var(--fm);min-width:18px;text-align:center}
+.nav-badge.warn{background:var(--warn);color:#000}
+.sb-foot{padding:14px 18px;border-top:1px solid var(--border)}
+.seed-btn{width:100%;font-size:10px;font-weight:600;letter-spacing:.5px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:4px;padding:7px;cursor:pointer;transition:all .15s;text-transform:uppercase}
+.seed-btn:hover{border-color:var(--pulse);color:var(--pulse)}
+
+/* main */
+.main-area{display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0}
+.topbar-title{font-family:var(--ff);font-size:14px;font-weight:600;letter-spacing:.4px;white-space:nowrap}
+.spacer{flex:1}
+.live-badge{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;letter-spacing:1px;color:var(--pulse)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--pulse);animation:pip 2s infinite}
+@keyframes pip{0%,100%{opacity:1}50%{opacity:.2}}
+.topbar-time{font-family:var(--fm);font-size:11px;color:var(--muted)}
+
+/* buttons */
+.btn{border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;letter-spacing:.3px;font-family:var(--fb)}
+.btn-pulse{background:var(--pulse);color:#000}.btn-pulse:hover{opacity:.85}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--pulse);color:var(--pulse)}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-icon{background:none;border:none;cursor:pointer;color:var(--muted);padding:3px 6px;border-radius:3px;transition:all .12s;font-size:14px}
+.btn-icon:hover{color:var(--danger);background:var(--dd)}
+.btn:disabled{opacity:.4;cursor:default}
+
+/* views */
+.main-content{flex:1;overflow-y:auto;min-height:0}
+.view{display:none;padding:20px 24px}
+.view.active{display:block}
+.view-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.view-title{font-family:var(--ff);font-size:18px;font-weight:700}
+.view-actions{display:flex;gap:8px;align-items:center}
+
+/* health score */
+.health-card{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:20px}
+.health-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px}
+.health-label{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.health-score-row{display:flex;align-items:baseline;gap:8px}
+.hs-num{font-family:var(--ff);font-size:52px;font-weight:700;line-height:1}
+.hs-num.good{color:var(--pulse)}.hs-num.attention{color:var(--warn)}.hs-num.risk{color:var(--danger)}
+.hs-max{font-family:var(--fm);font-size:16px;color:var(--muted)}
+.hs-level{display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-top:6px}
+.hs-level.good{background:var(--pd);color:var(--pulse)}.hs-level.attention{background:var(--wd);color:var(--warn)}.hs-level.risk{background:var(--dd);color:var(--danger)}
+.health-bars{display:flex;flex-direction:column;gap:11px}
+.hbar-row{display:grid;grid-template-columns:120px 1fr 140px;align-items:center;gap:12px}
+.hbar-label{font-size:12px;color:var(--muted);font-weight:500}
+.hbar-track{height:6px;background:var(--s3);border-radius:3px;overflow:hidden}
+.hbar-fill{height:100%;border-radius:3px;transition:width .7s ease}
+.hbar-detail{font-size:11px;color:var(--muted);text-align:right;font-family:var(--fm)}
+
+/* alert cards */
+.alerts-list{display:flex;flex-direction:column;gap:10px}
+.alert-card{background:var(--s2);border:1px solid var(--border);border-left:3px solid var(--faint);border-radius:8px;padding:14px 16px}
+.alert-card.high{border-left-color:var(--danger)}.alert-card.medium{border-left-color:var(--warn)}.alert-card.low{border-left-color:var(--pulse)}
+.alert-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px}
+.alert-title{font-size:13px;font-weight:600;line-height:1.4}
+.alert-meta{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.mod-badge{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 6px;border-radius:3px;background:var(--s3);color:var(--muted)}
+.alert-time{font-family:var(--fm);font-size:10px;color:var(--faint)}
+.alert-body{font-size:12px;color:var(--muted);line-height:1.65}
+.sev{display:inline-block;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.sev.high{background:var(--dd);color:var(--danger)}.sev.medium{background:var(--wd);color:var(--warn)}.sev.low{background:var(--pd);color:var(--pulse)}
+
+/* bills */
+.bills-layout{display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start}
+.bills-list{display:flex;flex-direction:column;gap:8px}
+.bill-card{background:var(--s2);border:1px solid var(--border);border-left:3px solid transparent;border-radius:8px;padding:14px;cursor:pointer;transition:all .15s}
+.bill-card:hover{border-color:var(--b2)}.bill-card.selected{border-left-color:var(--pulse);background:rgba(0,229,160,.04)}
+.bill-card-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.cat-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.bill-name{font-weight:600;font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bill-card-body{display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.bill-latest{font-family:var(--ff);font-size:18px;font-weight:700}
+.bill-month{font-size:10px;color:var(--muted);margin-top:1px}
+.chg{font-family:var(--fm);font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px}
+.chg.up{background:var(--dd);color:var(--danger)}.chg.dn{background:var(--pd);color:var(--pulse)}.chg.fl{background:var(--s3);color:var(--muted)}
+.bill-detail{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:20px;position:sticky;top:0}
+.bill-detail-empty{display:flex;align-items:center;justify-content:center;min-height:260px;color:var(--faint);font-size:13px}
+.detail-title{font-family:var(--ff);font-size:16px;font-weight:700;margin-bottom:3px}
+.detail-sub{font-size:11px;color:var(--muted);margin-bottom:16px}
+.stat-row{display:flex;gap:24px;margin-bottom:16px}
+.stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.stat-val{font-family:var(--fm);font-size:14px;font-weight:600}
+.htable{width:100%;border-collapse:collapse;margin-bottom:16px}
+.htable th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:0 0 8px;text-align:left;border-bottom:1px solid var(--border)}
+.htable td{font-family:var(--fm);font-size:12px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.htable tr.last td{color:var(--text);font-weight:600}
+.detail-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* subscriptions */
+.subs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.sub-card{background:var(--s2);border:1px solid var(--border);border-top:3px solid transparent;border-radius:8px;padding:16px;transition:all .15s}
+.sub-card:hover{border-color:var(--b2)}.sub-card.urgent{border-top-color:var(--danger)}.sub-card.soon{border-top-color:var(--warn)}.sub-card.ok{border-top-color:var(--pulse)}
+.sub-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.sub-name{font-weight:700;font-size:14px;margin-bottom:1px}
+.sub-cat{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.sub-amount{font-family:var(--ff);font-size:22px;font-weight:700}
+.sub-cycle{font-size:10px;color:var(--muted);margin-bottom:10px}
+.renewal-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-bottom:8px}
+.renewal-chip.urgent{background:var(--dd);color:var(--danger)}.renewal-chip.soon{background:var(--wd);color:var(--warn)}.renewal-chip.ok{background:var(--s3);color:var(--muted)}
+.sub-annual{font-size:11px;color:var(--muted);margin-bottom:6px}
+.sub-hike{font-size:11px;color:var(--warn);margin-bottom:10px}
+.sub-foot{display:flex;gap:6px;padding-top:10px;border-top:1px solid var(--border);margin-top:8px}
+
+/* warranties */
+.warranties-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.warranty-card{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:16px;transition:all .15s}
+.warranty-card:hover{border-color:var(--b2)}
+.w-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.w-name{font-weight:700;font-size:14px;margin-bottom:1px}
+.w-cat{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.exp-badge{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0}
+.exp-badge.critical{background:var(--dd);color:var(--danger)}.exp-badge.soon{background:var(--wd);color:var(--warn)}.exp-badge.ok{background:var(--pd);color:var(--pulse)}.exp-badge.expired{background:var(--s3);color:var(--faint)}
+.w-price{font-family:var(--fm);font-size:20px;font-weight:600;margin:8px 0 4px}
+.w-dates{font-size:11px;color:var(--muted);margin-bottom:12px}
+.w-foot{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border)}
+
+/* groceries */
+.grocery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.grocery-card{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:16px;transition:all .15s}
+.grocery-card:hover{border-color:var(--b2)}
+.g-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.g-name{font-weight:600;font-size:13px;margin-bottom:1px}
+.g-store{font-size:10px;color:var(--muted)}
+.g-price-row{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.g-latest{font-family:var(--ff);font-size:24px;font-weight:700}
+.g-change{font-family:var(--fm);font-size:11px;font-weight:600;padding:2px 6px;border-radius:4px}
+.g-change.up{background:var(--dd);color:var(--danger)}.g-change.dn{background:var(--pd);color:var(--pulse)}.g-change.fl{background:var(--s3);color:var(--muted)}
+.g-trend{font-size:11px;color:var(--muted);margin-bottom:8px}
+.g-spark{margin-bottom:10px}
+.g-foot{display:flex;gap:6px;padding-top:10px;border-top:1px solid var(--border)}
+
+/* empty + loading */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center}
+.empty-icon{font-size:36px;margin-bottom:12px;opacity:.5}
+.empty-title{font-family:var(--ff);font-size:16px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.empty-body{font-size:12px;color:var(--faint);max-width:280px}
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--muted);gap:8px}
+.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--pulse);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* drawer */
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:none}
+.backdrop.open{display:block}
+.drawer{position:fixed;top:0;right:-460px;width:460px;height:100vh;background:var(--surface);border-left:1px solid var(--border);z-index:101;transition:right .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+.drawer.open{right:0}
+.drawer-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.drawer-title{font-family:var(--ff);font-size:15px;font-weight:700}
+.drawer-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:4px 6px;border-radius:4px;transition:color .12s}
+.drawer-close:hover{color:var(--text)}
+.drawer-body{flex:1;overflow-y:auto;padding:20px}
+.drawer-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px}
+.drawer-text{font-size:13px;line-height:1.75;color:var(--text)}
+.drawer-loading{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;padding:12px 0}
+
+/* modal */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-ov.open{display:flex}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:440px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal-title{font-family:var(--ff);font-size:16px;font-weight:700;margin-bottom:20px}
+.fg{margin-bottom:14px}
+.fl{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:5px}
+.fi,.fs{width:100%;padding:9px 12px;background:var(--s2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--fb);font-size:13px;transition:border-color .15s}
+.fi:focus,.fs:focus{outline:none;border-color:var(--pulse)}
+.fs option{background:var(--s2)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="logo-mark">A</div>
+    <div>
+      <div class="logo-text">AreteSapiens</div>
+      <div class="logo-sub">Household Intelligence</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="nav-item active" data-view="feed" onclick="go('feed',this)">
+      <span class="nav-icon">⚡</span>Intelligence Feed
+      <span id="badge-feed" class="nav-badge" style="display:none">0</span>
+    </div>
+    <div class="nav-item" data-view="bills" onclick="go('bills',this)">
+      <span class="nav-icon">🧾</span>Bills
+    </div>
+    <div class="nav-item" data-view="subs" onclick="go('subs',this)">
+      <span class="nav-icon">💳</span>Subscriptions
+      <span id="badge-subs" class="nav-badge warn" style="display:none">0</span>
+    </div>
+    <div class="nav-item" data-view="warranties" onclick="go('warranties',this)">
+      <span class="nav-icon">🛡</span>Warranties
+      <span id="badge-warranties" class="nav-badge" style="display:none">0</span>
+    </div>
+    <div class="nav-item" data-view="groceries" onclick="go('groceries',this)">
+      <span class="nav-icon">🛒</span>Groceries
+    </div>
+  </nav>
+  <div class="sb-foot">
+    <button class="seed-btn" onclick="seedDemo()">⟳ Load Demo Data</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main-area">
+  <header class="topbar">
+    <div id="topbar-title" class="topbar-title">Intelligence Feed</div>
+    <div class="spacer"></div>
+    <button class="btn btn-ghost btn-sm" id="run-btn" onclick="runChecks()">Run Checks</button>
+    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <div id="clock" class="topbar-time">--:--:--</div>
+  </header>
+
+  <main class="main-content">
+
+    <!-- FEED -->
+    <div id="view-feed" class="view active">
+      <div class="health-card">
+        <div class="health-top">
+          <div>
+            <div class="health-label">Household Financial Health</div>
+            <div class="health-score-row">
+              <div id="hs-num" class="hs-num attention">--</div>
+              <div class="hs-max">/100</div>
+            </div>
+            <div id="hs-level" class="hs-level attention">Loading…</div>
+          </div>
+        </div>
+        <div class="health-bars">
+          <div class="hbar-row">
+            <div class="hbar-label">Bills</div>
+            <div class="hbar-track"><div id="hb-bills" class="hbar-fill" style="width:0%;background:var(--danger)"></div></div>
+            <div id="hd-bills" class="hbar-detail">—</div>
+          </div>
+          <div class="hbar-row">
+            <div class="hbar-label">Subscriptions</div>
+            <div class="hbar-track"><div id="hb-subs" class="hbar-fill" style="width:0%;background:var(--warn)"></div></div>
+            <div id="hd-subs" class="hbar-detail">—</div>
+          </div>
+          <div class="hbar-row">
+            <div class="hbar-label">Warranties</div>
+            <div class="hbar-track"><div id="hb-warranties" class="hbar-fill" style="width:0%;background:var(--danger)"></div></div>
+            <div id="hd-warranties" class="hbar-detail">—</div>
+          </div>
+          <div class="hbar-row">
+            <div class="hbar-label">Groceries</div>
+            <div class="hbar-track"><div id="hb-groceries" class="hbar-fill" style="width:0%;background:var(--warn)"></div></div>
+            <div id="hd-groceries" class="hbar-detail">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="view-header" style="padding-top:4px">
+        <div class="view-title">Recent Alerts</div>
+        <div id="alert-count" style="font-size:12px;color:var(--muted)"></div>
+      </div>
+      <div id="alerts-list" class="alerts-list">
+        <div class="loading"><div class="spinner"></div>Loading…</div>
+      </div>
+    </div>
+
+    <!-- BILLS -->
+    <div id="view-bills" class="view">
+      <div class="view-header">
+        <div class="view-title">Bills</div>
+        <div class="view-actions">
+          <button class="btn btn-pulse btn-sm" onclick="openModal('add-bill')">+ Add Bill</button>
+        </div>
+      </div>
+      <div class="bills-layout">
+        <div id="bills-list" class="bills-list"><div class="loading"><div class="spinner"></div></div></div>
+        <div id="bill-detail" class="bill-detail">
+          <div class="bill-detail-empty">← Select a bill to see details</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBSCRIPTIONS -->
+    <div id="view-subs" class="view">
+      <div class="view-header">
+        <div class="view-title">Subscriptions</div>
+        <div class="view-actions">
+          <div id="subs-total" style="font-size:12px;color:var(--muted)"></div>
+          <button class="btn btn-pulse btn-sm" onclick="openModal('add-sub')">+ Add</button>
+        </div>
+      </div>
+      <div id="subs-grid" class="subs-grid"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- WARRANTIES -->
+    <div id="view-warranties" class="view">
+      <div class="view-header">
+        <div class="view-title">Warranties</div>
+        <div class="view-actions">
+          <button class="btn btn-pulse btn-sm" onclick="openModal('add-warranty')">+ Add</button>
+        </div>
+      </div>
+      <div id="warranties-grid" class="warranties-grid"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- GROCERIES -->
+    <div id="view-groceries" class="view">
+      <div class="view-header">
+        <div class="view-title">Grocery Tracker</div>
+        <div class="view-actions">
+          <button class="btn btn-pulse btn-sm" onclick="openModal('add-grocery')">+ Add Item</button>
+        </div>
+      </div>
+      <div id="grocery-grid" class="grocery-grid"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+  </main>
+</div>
+</div>
+
+<!-- DRAWER -->
+<div id="backdrop" class="backdrop" onclick="closeDrawer()"></div>
+<div id="drawer" class="drawer">
+  <div class="drawer-head">
+    <div id="drawer-title" class="drawer-title">Gemini Analysis</div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-section-title">AI Explanation</div>
+    <div id="drawer-content"><div class="drawer-loading"><div class="spinner"></div>Asking Gemini…</div></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-ov" class="modal-ov" onclick="closeModalOut(event)">
+  <div id="modal-box" class="modal-box"></div>
+</div>
+
+<script>
+'use strict';
+let selBillId = null, allBills = [];
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+const fmt = n => '₹' + Number(n).toLocaleString('en-IN',{maximumFractionDigits:0});
+
+function daysUntil(iso){
+  if(!iso) return 9999;
+  const d = new Date(iso.split('T')[0]);
+  const t = new Date(); t.setHours(0,0,0,0);
+  return Math.round((d - t)/86400000);
+}
+
+function timeAgo(iso){
+  if(!iso) return '';
+  const m = Math.floor((Date.now()-new Date(iso))/60000);
+  if(m<2) return 'just now';
+  if(m<60) return m+'m ago';
+  const h = Math.floor(m/60);
+  if(h<24) return h+'h ago';
+  return Math.floor(h/24)+'d ago';
+}
+
+function esc(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function barChart(vals, w=90, h=28){
+  if(!vals||!vals.length) return '';
+  const max=Math.max(...vals,1), min=Math.min(...vals), range=max-min||1, bw=w/vals.length;
+  return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg">'+
+    vals.map((v,i)=>{
+      const bh=Math.max(3,((v-min)/range)*(h-4)+4), x=i*bw+0.5, y=h-bh;
+      const last=i===vals.length-1, up=i>0&&vals[i]>vals[i-1];
+      const fill=last?(up?'rgba(255,77,109,.75)':'rgba(0,229,160,.65)'):'#283048';
+      return '<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+Math.max(1,bw-2).toFixed(1)+'" height="'+bh.toFixed(1)+'" rx="1" fill="'+fill+'"/>';
+    }).join('')+'</svg>';
+}
+
+function lineChart(vals, w=90, h=28){
+  if(!vals||vals.length<2) return '';
+  const max=Math.max(...vals,1), min=Math.min(...vals), range=max-min||1, pad=3;
+  const pts=vals.map((v,i)=>{
+    const x=pad+(i/(vals.length-1))*(w-2*pad);
+    const y=pad+((max-v)/range)*(h-2*pad);
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  const last=vals[vals.length-1], prev=vals[vals.length-2];
+  const col=last>prev?'#FF4D6D':last<prev?'#00E5A0':'#6B7280';
+  const lx=(pad+(w-2*pad)).toFixed(1);
+  const ly=(pad+((max-last)/range)*(h-2*pad)).toFixed(1);
+  return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg">'+
+    '<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" opacity=".85"/>'+
+    '<circle cx="'+lx+'" cy="'+ly+'" r="2.5" fill="'+col+'"/>'+
+    '</svg>';
+}
+
+const CAT_ICONS={electricity:'⚡',water:'💧',gas:'🔥',internet:'📶',phone:'📱',credit_card:'💳',streaming:'▶',software:'☁',fitness:'💪',electronics:'💻',appliance:'🏠',vehicle:'🚗',other:'•'};
+const CAT_COL={electricity:'#F59E0B',water:'#60A5FA',gas:'#F97316',internet:'#8B5CF6',phone:'#EC4899',credit_card:'#EF4444',streaming:'#F97316',software:'#60A5FA',fitness:'#00E5A0',electronics:'#8B5CF6',appliance:'#6B7280',vehicle:'#F59E0B',other:'#4B5563'};
+
+// ── nav ───────────────────────────────────────────────────────────────────────
+const TITLES={feed:'Intelligence Feed',bills:'Bills',subs:'Subscriptions',warranties:'Warranties',groceries:'Grocery Tracker'};
+
+function go(view, el){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  document.getElementById('topbar-title').textContent=TITLES[view]||view;
+  if(view==='feed'){loadFeed();loadHealth();}
+  else if(view==='bills') loadBills();
+  else if(view==='subs') loadSubs();
+  else if(view==='warranties') loadWarranties();
+  else if(view==='groceries') loadGroceries();
+}
+
+// ── clock ─────────────────────────────────────────────────────────────────────
+(function clock(){
+  const el=document.getElementById('clock');
+  const tick=()=>el.textContent=new Date().toLocaleTimeString('en-IN',{hour12:false});
+  tick(); setInterval(tick,1000);
+})();
+
+// ── health score ──────────────────────────────────────────────────────────────
+async function loadHealth(){
+  try{
+    const d=await fetch('/api/risk-score').then(r=>r.json());
+    const s=d.score, cls=s>=80?'good':s>=50?'attention':'risk';
+    const en=document.getElementById('hs-num');
+    en.textContent=s; en.className='hs-num '+cls;
+    const el=document.getElementById('hs-level');
+    el.textContent=d.level; el.className='hs-level '+cls;
+    const f=d.factors;
+    setBar('bills',f.bills.deductions,40,f.bills.detail);
+    setBar('subs',f.subscriptions.deductions,25,f.subscriptions.detail);
+    setBar('warranties',f.warranties.deductions,32,f.warranties.detail);
+    setBar('groceries',f.groceries.deductions,20,f.groceries.detail);
+  }catch(e){}
+}
+
+function setBar(k,ded,mx,detail){
+  const pct=mx?Math.min(100,ded/mx*100):0;
+  document.getElementById('hb-'+k).style.width=pct+'%';
+  document.getElementById('hd-'+k).textContent=detail||'—';
+}
+
+// ── feed ──────────────────────────────────────────────────────────────────────
+async function loadFeed(){
+  const c=document.getElementById('alerts-list');
+  try{
+    const alerts=await fetch('/api/alerts').then(r=>r.json());
+    if(!alerts.length){
+      c.innerHTML='<div class="empty"><div class="empty-icon">⚡</div><div class="empty-title">No alerts yet</div><div class="empty-body">Seed demo data or add bills and subscriptions, then click <strong>Run Checks</strong>.</div></div>';
+      document.getElementById('alert-count').textContent='';
+      document.getElementById('badge-feed').style.display='none';
+      return;
+    }
+    document.getElementById('alert-count').textContent=alerts.length+' alert'+(alerts.length!==1?'s':'');
+    const unseen=alerts.filter(a=>!a.seen).length;
+    const b=document.getElementById('badge-feed');
+    if(unseen){b.style.display='';b.textContent=unseen;}else b.style.display='none';
+    const MOD={bills:'Bill',subscriptions:'Subscription',warranties:'Warranty',groceries:'Grocery'};
+    c.innerHTML=alerts.map(a=>`
+      <div class="alert-card ${a.severity||'low'}">
+        <div class="alert-top">
+          <div class="alert-title">${esc(a.title)}</div>
+          <div class="alert-meta">
+            <span class="sev ${a.severity||'low'}">${a.severity||'low'}</span>
+            <span class="mod-badge">${MOD[a.module]||a.module}</span>
+            <span class="alert-time">${timeAgo(a.created_at)}</span>
+          </div>
+        </div>
+        ${a.body?'<div class="alert-body">'+esc(a.body)+'</div>':''}
+      </div>`).join('');
+  }catch(e){c.innerHTML='<div class="empty"><div class="empty-title">Could not load alerts</div></div>';}
+}
+
+// ── bills ─────────────────────────────────────────────────────────────────────
+async function loadBills(){
+  const c=document.getElementById('bills-list');
+  c.innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  try{
+    allBills=await fetch('/api/bills').then(r=>r.json());
+    if(!allBills.length){
+      c.innerHTML='<div class="empty"><div class="empty-icon">🧾</div><div class="empty-title">No bills yet</div><div class="empty-body">Add electricity, water, internet bills to track spending.</div></div>';
+      return;
+    }
+    renderBillList();
+  }catch(e){c.innerHTML='<div class="empty"><div class="empty-title">Could not load</div></div>';}
+}
+
+function renderBillList(){
+  const c=document.getElementById('bills-list');
+  c.innerHTML=allBills.map(b=>{
+    const h=b.history||[], vals=h.map(x=>x.amount);
+    const latest=h.length?h[h.length-1]:null, prev=h.length>=2?h[h.length-2]:null;
+    const chg=latest&&prev?((latest.amount-prev.amount)/prev.amount*100):null;
+    const cls=chg===null?'fl':chg>0?'up':'dn';
+    const lbl=chg===null?'—':(chg>0?'+':'')+chg.toFixed(1)+'%';
+    const col=CAT_COL[b.category]||'#4B5563';
+    return `<div class="bill-card${selBillId===b.id?' selected':''}" onclick="selBill('${b.id}')">
+      <div class="bill-card-head">
+        <div class="cat-icon" style="background:${col}20;color:${col}">${CAT_ICONS[b.category]||'•'}</div>
+        <div class="bill-name">${esc(b.name)}</div>
+        <button class="btn-icon" onclick="event.stopPropagation();delBill('${b.id}','${esc(b.name)}')">×</button>
+      </div>
+      <div class="bill-card-body">
+        <div>
+          <div class="bill-latest">${latest?fmt(latest.amount):'—'}</div>
+          <div class="bill-month">${latest?latest.month:'no data'}</div>
+        </div>
+        <div>${barChart(vals,80,26)}</div>
+        <span class="chg ${cls}">${lbl}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selBill(id){
+  selBillId=id; renderBillList();
+  const b=allBills.find(x=>x.id===id); if(!b) return;
+  const h=b.history||[];
+  const prevWindow=h.slice(-4,-1);
+  const avgVal=prevWindow.length?prevWindow.reduce((s,x)=>s+x.amount,0)/prevWindow.length:0;
+  const latest=h.length?h[h.length-1]:null;
+  const spike=latest&&avgVal?((latest.amount-avgVal)/avgVal*100):null;
+  const rows=h.slice().reverse().map((r,i)=>{
+    const isLast=i===0;
+    const orig=h[h.length-1-i], prevOrig=h.length-1-i>0?h[h.length-2-i]:null;
+    const d=prevOrig?((orig.amount-prevOrig.amount)/prevOrig.amount*100):null;
+    const dHtml=d===null?'':(d>0?`<span style="color:var(--danger)">+${d.toFixed(1)}%</span>`:`<span style="color:var(--pulse)">${d.toFixed(1)}%</span>`);
+    return `<tr class="${isLast?'last':''}"><td>${orig.month}</td><td>${fmt(orig.amount)}</td><td>${dHtml}</td></tr>`;
+  }).join('');
+  document.getElementById('bill-detail').innerHTML=`
+    <div class="detail-title">${esc(b.name)}</div>
+    <div class="detail-sub">${b.category} · alert at ${b.alert_threshold_pct||20}% · ${h.length} months</div>
+    ${avgVal&&latest?`<div class="stat-row">
+      <div><div class="stat-label">3-Month Avg</div><div class="stat-val">${fmt(avgVal)}</div></div>
+      <div><div class="stat-label">Latest</div><div class="stat-val">${fmt(latest.amount)}</div></div>
+      ${spike!==null?`<div><div class="stat-label">vs Avg</div><div class="stat-val" style="color:${spike>0?'var(--danger)':'var(--pulse)'}">${spike>0?'+':''}${spike.toFixed(1)}%</div></div>`:''}
+    </div>`:''}
+    <table class="htable"><thead><tr><th>Month</th><th>Amount</th><th>Change</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="detail-actions">
+      <button class="btn btn-ghost btn-sm" onclick="openReading('${b.id}','${esc(b.name)}')">+ Add Reading</button>
+      <button class="btn btn-ghost btn-sm" onclick="explain('bills','${b.id}','${esc(b.name)}')">⚡ Explain</button>
+    </div>`;
+}
+
+async function delBill(id,name){
+  if(!confirm('Delete "'+name+'"?')) return;
+  await fetch('/api/bills/'+id,{method:'DELETE'});
+  if(selBillId===id){selBillId=null;document.getElementById('bill-detail').innerHTML='<div class="bill-detail-empty">← Select a bill to see details</div>';}
+  loadBills();
+}
+
+function openReading(id,name){
+  const today=new Date(),cur=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
+  document.getElementById('modal-box').innerHTML=`
+    <div class="modal-title">Add Reading — ${esc(name)}</div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Month</label><input class="fi" id="r-month" type="month" value="${cur}"/></div>
+      <div class="fg"><label class="fl">Amount (₹)</label><input class="fi" id="r-amt" type="number" min="0" placeholder="1850"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-pulse" onclick="submitReading('${id}')">Save</button>
+    </div>`;
+  openModal();
+}
+
+async function submitReading(id){
+  const month=document.getElementById('r-month').value, amt=document.getElementById('r-amt').value;
+  if(!month||!amt) return;
+  await fetch('/api/bills/'+id+'/reading',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({month,amount:parseFloat(amt)})});
+  closeModal(); loadBills();
+  setTimeout(()=>{if(selBillId===id)selBill(id);},300);
+}
+
+// ── subscriptions ─────────────────────────────────────────────────────────────
+async function loadSubs(){
+  const c=document.getElementById('subs-grid');
+  c.innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  try{
+    const subs=await fetch('/api/subscriptions').then(r=>r.json());
+    if(!subs.length){
+      c.innerHTML='<div class="empty"><div class="empty-icon">💳</div><div class="empty-title">No subscriptions yet</div><div class="empty-body">Add Netflix, Spotify, gym — anything that renews automatically.</div></div>';
+      document.getElementById('subs-total').textContent='';return;
+    }
+    const monthly=subs.reduce((s,x)=>s+(x.billing_cycle==='monthly'?x.amount:x.amount/12),0);
+    document.getElementById('subs-total').textContent=fmt(monthly)+'/month total';
+    let urgent=0;
+    c.innerHTML=subs.map(s=>{
+      const d=daysUntil(s.next_renewal);
+      const urg=d<=2?'urgent':d<=7?'soon':'ok';
+      if(d>=0&&d<=7) urgent++;
+      const chip=d<0?'Overdue':d===0?'Today':d===1?'Tomorrow':'In '+d+' days';
+      const chipCls=d<0||d<=2?'urgent':d<=7?'soon':'ok';
+      const ph=s.price_history||[];
+      const hike=ph.length>=2&&ph[ph.length-1].amount>ph[ph.length-2].amount;
+      const hikeAmt=hike?ph[ph.length-1].amount-ph[ph.length-2].amount:0;
+      const annual=s.billing_cycle==='monthly'?s.amount*12:s.amount;
+      return `<div class="sub-card ${urg}">
+        <div class="sub-head">
+          <div><div class="sub-name">${esc(s.name)}</div><div class="sub-cat">${s.category}</div></div>
+          <button class="btn-icon" onclick="delSub('${s.id}','${esc(s.name)}')">×</button>
+        </div>
+        <div class="sub-amount">${fmt(s.amount)}</div>
+        <div class="sub-cycle">${s.billing_cycle==='monthly'?'/month':'/year'} · ${s.currency}</div>
+        <div style="margin-top:10px"><span class="renewal-chip ${chipCls}">🔔 ${chip}</span></div>
+        <div class="sub-annual">₹${Number(annual).toLocaleString('en-IN')} annually</div>
+        ${hike?`<div class="sub-hike">⚠ Price hiked +${fmt(hikeAmt)} from ${ph[ph.length-2].from}</div>`:''}
+        <div class="sub-foot">
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="explain('subscriptions','${s.id}','${esc(s.name)}')">⚡ Explain value</button>
+        </div>
+      </div>`;
+    }).join('');
+    const b=document.getElementById('badge-subs');
+    if(urgent){b.style.display='';b.textContent=urgent;}else b.style.display='none';
+  }catch(e){c.innerHTML='<div class="empty"><div class="empty-title">Could not load</div></div>';}
+}
+
+async function delSub(id,name){
+  if(!confirm('Delete "'+name+'"?')) return;
+  await fetch('/api/subscriptions/'+id,{method:'DELETE'}); loadSubs();
+}
+
+// ── warranties ────────────────────────────────────────────────────────────────
+async function loadWarranties(){
+  const c=document.getElementById('warranties-grid');
+  c.innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  try{
+    const items=await fetch('/api/warranties').then(r=>r.json());
+    if(!items.length){
+      c.innerHTML='<div class="empty"><div class="empty-icon">🛡</div><div class="empty-title">No warranties tracked</div><div class="empty-body">Add electronics and appliances to get expiry alerts before it\'s too late.</div></div>';
+      return;
+    }
+    let urgent=0;
+    c.innerHTML=items.map(w=>{
+      const d=daysUntil(w.warranty_expiry);
+      let cls,lbl;
+      if(d<0){cls='expired';lbl='Expired '+Math.abs(d)+'d ago';}
+      else if(d<=14){cls='critical';lbl='Expires in '+d+'d';urgent++;}
+      else if(d<=90){cls='soon';lbl='Expires in '+d+'d';if(d<=30)urgent++;}
+      else{cls='ok';lbl=Math.round(d/30)+'mo remaining';}
+      return `<div class="warranty-card">
+        <div class="w-head">
+          <div><div class="w-name">${esc(w.item_name)}</div><div class="w-cat">${w.category}</div></div>
+          <span class="exp-badge ${cls}">${lbl}</span>
+        </div>
+        <div class="w-price">${fmt(w.purchase_price)}</div>
+        <div class="w-dates">Bought ${w.purchase_date} · Expires ${w.warranty_expiry}</div>
+        <div class="w-foot">
+          <button class="btn btn-ghost btn-sm" onclick="explain('warranties','${w.id}','${esc(w.item_name)}')">⚡ Explain risk</button>
+          <button class="btn-icon" onclick="delWarranty('${w.id}','${esc(w.item_name)}')">×</button>
+        </div>
+      </div>`;
+    }).join('');
+    const b=document.getElementById('badge-warranties');
+    if(urgent){b.style.display='';b.textContent=urgent;}else b.style.display='none';
+  }catch(e){c.innerHTML='<div class="empty"><div class="empty-title">Could not load</div></div>';}
+}
+
+async function delWarranty(id,name){
+  if(!confirm('Delete "'+name+'"?')) return;
+  await fetch('/api/warranties/'+id,{method:'DELETE'}); loadWarranties();
+}
+
+// ── groceries ─────────────────────────────────────────────────────────────────
+async function loadGroceries(){
+  const c=document.getElementById('grocery-grid');
+  c.innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  try{
+    const items=await fetch('/api/groceries').then(r=>r.json());
+    if(!items.length){
+      c.innerHTML='<div class="empty"><div class="empty-icon">🛒</div><div class="empty-title">No items tracked</div><div class="empty-body">Track grocery prices monthly to spot inflation before it hits your budget.</div></div>';
+      return;
+    }
+    c.innerHTML=items.map(item=>{
+      const ph=item.price_history||[], vals=ph.map(p=>p.price);
+      const latest=ph.length?ph[ph.length-1]:null, prev=ph.length>=2?ph[ph.length-2]:null;
+      const chg=latest&&prev?((latest.price-prev.price)/prev.price*100):null;
+      const cls=chg===null?'fl':chg>0?'up':'dn';
+      const lbl=chg===null?'':(chg>0?'+':'')+chg.toFixed(1)+'%';
+      const first=ph.length>=3?ph[0]:null;
+      const total=latest&&first?((latest.price-first.price)/first.price*100):null;
+      const trend=total!==null?((total>=0?'↑':'↓')+Math.abs(total).toFixed(0)+'% over '+ph.length+' months'):'';
+      return `<div class="grocery-card">
+        <div class="g-head">
+          <div><div class="g-name">${esc(item.item_name)}</div><div class="g-store">${esc(item.usual_store||item.unit)}</div></div>
+          <button class="btn-icon" onclick="delGrocery('${item.id}','${esc(item.item_name)}')">×</button>
+        </div>
+        <div class="g-price-row">
+          <div class="g-latest">${latest?fmt(latest.price):'—'}</div>
+          ${lbl?`<span class="g-change ${cls}">${lbl}</span>`:''}
+        </div>
+        ${trend?`<div class="g-trend">${trend}</div>`:''}
+        <div class="g-spark">${lineChart(vals,90,30)}</div>
+        <div class="g-foot">
+          <button class="btn btn-ghost btn-sm" onclick="openPrice('${item.id}','${esc(item.item_name)}')">+ Price</button>
+          <button class="btn btn-ghost btn-sm" onclick="explain('groceries','${item.id}','${esc(item.item_name)}')">⚡ Trend</button>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){c.innerHTML='<div class="empty"><div class="empty-title">Could not load</div></div>';}
+}
+
+function openPrice(id,name){
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('modal-box').innerHTML=`
+    <div class="modal-title">Add Price — ${esc(name)}</div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Date</label><input class="fi" id="p-date" type="date" value="${today}"/></div>
+      <div class="fg"><label class="fl">Price (₹)</label><input class="fi" id="p-val" type="number" min="0" step="0.01" placeholder="115"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-pulse" onclick="submitPrice('${id}')">Save</button>
+    </div>`;
+  openModal();
+}
+
+async function submitPrice(id){
+  const date=document.getElementById('p-date').value, price=document.getElementById('p-val').value;
+  if(!date||!price) return;
+  await fetch('/api/groceries/'+id+'/price',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date,price:parseFloat(price)})});
+  closeModal(); loadGroceries();
+}
+
+async function delGrocery(id,name){
+  if(!confirm('Delete "'+name+'"?')) return;
+  await fetch('/api/groceries/'+id,{method:'DELETE'}); loadGroceries();
+}
+
+// ── drawer ────────────────────────────────────────────────────────────────────
+async function explain(mod,id,name){
+  document.getElementById('drawer-title').textContent=name;
+  document.getElementById('drawer-content').innerHTML='<div class="drawer-loading"><div class="spinner"></div>Asking Gemini…</div>';
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('backdrop').classList.add('open');
+  try{
+    const d=await fetch('/api/'+mod+'/'+id+'/explain',{method:'POST'}).then(r=>r.json());
+    const text=d.explanation||d.error||'No explanation available.';
+    document.getElementById('drawer-content').innerHTML='<div class="drawer-text">'+esc(text).replace(/\n/g,'<br>')+'</div>';
+  }catch(e){
+    document.getElementById('drawer-content').innerHTML='<div class="drawer-text" style="color:var(--muted)">Could not load explanation.</div>';
+  }
+}
+
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('backdrop').classList.remove('open');
+}
+
+// ── modals ────────────────────────────────────────────────────────────────────
+function openModal(type){
+  if(type) buildModal(type);
+  document.getElementById('modal-ov').classList.add('open');
+}
+function closeModal(){document.getElementById('modal-ov').classList.remove('open');}
+function closeModalOut(e){if(e.target===document.getElementById('modal-ov'))closeModal();}
+
+function buildModal(type){
+  const b=document.getElementById('modal-box');
+  if(type==='add-bill'){
+    b.innerHTML=`<div class="modal-title">Add Bill</div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Bill Name</label><input class="fi" id="mb-name" placeholder="Electricity — BESCOM"/></div>
+        <div class="fg"><label class="fl">Category</label><select class="fs" id="mb-cat">
+          <option value="electricity">Electricity</option><option value="water">Water</option>
+          <option value="gas">Gas</option><option value="internet">Internet</option>
+          <option value="phone">Phone</option><option value="credit_card">Credit Card</option>
+          <option value="other">Other</option></select></div>
+      </div>
+      <div class="fg"><label class="fl">Recent Amounts (₹) — comma-separated, oldest first</label>
+        <input class="fi" id="mb-amounts" placeholder="1840, 1920, 1780, 1850, 2640"/></div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Starting Month</label><input class="fi" id="mb-start" type="month"/></div>
+        <div class="fg"><label class="fl">Alert Threshold %</label><input class="fi" id="mb-thresh" type="number" value="20" min="5"/></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-pulse" onclick="submitBill()">Add</button>
+      </div>`;
+  } else if(type==='add-sub'){
+    const today=new Date().toISOString().split('T')[0];
+    b.innerHTML=`<div class="modal-title">Add Subscription</div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Service Name</label><input class="fi" id="ms-name" placeholder="Netflix"/></div>
+        <div class="fg"><label class="fl">Category</label><select class="fs" id="ms-cat">
+          <option value="streaming">Streaming</option><option value="software">Software</option>
+          <option value="fitness">Fitness</option><option value="other">Other</option></select></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Amount (₹)</label><input class="fi" id="ms-amt" type="number" min="0" placeholder="799"/></div>
+        <div class="fg"><label class="fl">Billing Cycle</label><select class="fs" id="ms-cycle">
+          <option value="monthly">Monthly</option><option value="annual">Annual</option></select></div>
+      </div>
+      <div class="fg"><label class="fl">Next Renewal Date</label><input class="fi" id="ms-renewal" type="date" value="${today}"/></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-pulse" onclick="submitSub()">Add</button>
+      </div>`;
+  } else if(type==='add-warranty'){
+    b.innerHTML=`<div class="modal-title">Add Warranty</div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Item Name</label><input class="fi" id="mw-name" placeholder='MacBook Pro 14"'/></div>
+        <div class="fg"><label class="fl">Category</label><select class="fs" id="mw-cat">
+          <option value="electronics">Electronics</option><option value="appliance">Appliance</option>
+          <option value="vehicle">Vehicle</option><option value="other">Other</option></select></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Purchase Date</label><input class="fi" id="mw-pd" type="date"/></div>
+        <div class="fg"><label class="fl">Warranty Expiry</label><input class="fi" id="mw-ed" type="date"/></div>
+      </div>
+      <div class="fg"><label class="fl">Purchase Price (₹)</label><input class="fi" id="mw-price" type="number" min="0" placeholder="189900"/></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-pulse" onclick="submitWarranty()">Add</button>
+      </div>`;
+  } else if(type==='add-grocery'){
+    const today=new Date().toISOString().split('T')[0];
+    b.innerHTML=`<div class="modal-title">Add Grocery Item</div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Item Name</label><input class="fi" id="mg-name" placeholder="Eggs (12 pack)"/></div>
+        <div class="fg"><label class="fl">Unit</label><select class="fs" id="mg-unit">
+          <option value="pack">Pack</option><option value="kg">Kg</option>
+          <option value="litre">Litre</option><option value="piece">Piece</option></select></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Current Price (₹)</label><input class="fi" id="mg-price" type="number" min="0" step="0.01" placeholder="89"/></div>
+        <div class="fg"><label class="fl">Usual Store</label><input class="fi" id="mg-store" placeholder="BigBasket"/></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-pulse" onclick="submitGrocery()">Add</button>
+      </div>`;
+  }
+}
+
+async function submitBill(){
+  const name=document.getElementById('mb-name').value.trim();
+  const cat=document.getElementById('mb-cat').value;
+  const amtStr=document.getElementById('mb-amounts').value;
+  const start=document.getElementById('mb-start').value;
+  const thresh=document.getElementById('mb-thresh').value;
+  if(!name||!amtStr){alert('Name and amounts required');return;}
+  const amts=amtStr.split(',').map(s=>parseFloat(s.trim())).filter(n=>!isNaN(n));
+  if(!amts.length){alert('Enter at least one amount');return;}
+  const history=amts.map((a,i)=>{
+    let month;
+    if(start){const[y,m]=start.split('-').map(Number);const d=new Date(y,m-1+i,1);month=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+    else{const t=new Date();const d=new Date(t.getFullYear(),t.getMonth()-amts.length+1+i,1);month=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+    return{month,amount:a};
+  });
+  await fetch('/api/bills',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,category:cat,history,alert_threshold_pct:parseFloat(thresh)||20})});
+  closeModal(); loadBills();
+}
+
+async function submitSub(){
+  const name=document.getElementById('ms-name').value.trim();
+  const cat=document.getElementById('ms-cat').value;
+  const amt=document.getElementById('ms-amt').value;
+  const cycle=document.getElementById('ms-cycle').value;
+  const renewal=document.getElementById('ms-renewal').value;
+  if(!name||!amt||!renewal){alert('Name, amount, and renewal date required');return;}
+  await fetch('/api/subscriptions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,category:cat,amount:parseFloat(amt),billing_cycle:cycle,next_renewal:renewal})});
+  closeModal(); loadSubs();
+}
+
+async function submitWarranty(){
+  const name=document.getElementById('mw-name').value.trim();
+  const cat=document.getElementById('mw-cat').value;
+  const pd=document.getElementById('mw-pd').value;
+  const ed=document.getElementById('mw-ed').value;
+  const price=document.getElementById('mw-price').value;
+  if(!name||!pd||!ed||!price){alert('All fields required');return;}
+  await fetch('/api/warranties',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({item_name:name,category:cat,purchase_date:pd,warranty_expiry:ed,purchase_price:parseFloat(price)})});
+  closeModal(); loadWarranties();
+}
+
+async function submitGrocery(){
+  const name=document.getElementById('mg-name').value.trim();
+  const unit=document.getElementById('mg-unit').value;
+  const price=document.getElementById('mg-price').value;
+  const store=document.getElementById('mg-store').value.trim();
+  if(!name||!price){alert('Name and price required');return;}
+  await fetch('/api/groceries',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({item_name:name,unit,price:parseFloat(price),usual_store:store})});
+  closeModal(); loadGroceries();
+}
+
+// ── run checks + seed ─────────────────────────────────────────────────────────
+async function runChecks(){
+  const btn=document.getElementById('run-btn');
+  btn.disabled=true; btn.textContent='Checking…';
+  await fetch('/api/run-checks',{method:'POST'});
+  setTimeout(()=>{btn.disabled=false;btn.textContent='Run Checks';loadFeed();loadHealth();},3500);
+}
+
+async function seedDemo(){
+  if(!confirm('Replace all data with demo data?')) return;
+  await fetch('/api/seed-demo',{method:'POST'});
+  selBillId=null;
+  document.getElementById('bill-detail').innerHTML='<div class="bill-detail-empty">← Select a bill to see details</div>';
+  setTimeout(()=>{loadFeed();loadHealth();},3000);
+  alert('Demo data seeded. Gemini checks running in background — feed will populate shortly.');
+}
+
+// ── init ──────────────────────────────────────────────────────────────────────
+loadFeed();
+loadHealth();
+</script>
+</body>
+</html>
