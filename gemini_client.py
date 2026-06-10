@@ -1,5 +1,6 @@
 import os
 import json
+import base64
 import concurrent.futures
 from google import genai
 from google.genai import types
@@ -136,8 +137,8 @@ Return only the JSON, no markdown, no explanation."""
 
 # ── Vaakil: Document Analysis ─────────────────────────────────────────────────
 
-def analyze_document(doc_text, jurisdiction_data, doc_type):
-    """Full legal analysis using jurisdiction ruleset from MongoDB."""
+def analyze_document(doc_text, jurisdiction_data, doc_type, image_b64=None, image_mime=None):
+    """Full legal analysis using jurisdiction ruleset from MongoDB. Supports text and image input."""
     doc_type_info = jurisdiction_data.get("document_types", {}).get(doc_type, {})
 
     rights_list = "\n".join(f"- {r}" for r in doc_type_info.get("key_rights", []))
@@ -148,6 +149,8 @@ def analyze_document(doc_text, jurisdiction_data, doc_type):
     template = doc_type_info.get("template_response", "")
     country_name = jurisdiction_data.get("country_name", "Unknown")
 
+    doc_section = f"\nDOCUMENT TEXT:\n{doc_text[:2500]}" if doc_text and doc_text.strip() else "\n[Analyze the legal document image provided above]"
+
     prompt = f"""You are Vaakil, an empathetic legal aid assistant for {country_name}. Analyze this {doc_type.replace('_', ' ')} document.
 
 Governing law: {governing_law}
@@ -155,16 +158,28 @@ Rights the user has:
 {rights_list}
 Violations to check for:
 {violations_list}
-
-DOCUMENT:
-{doc_text[:2500]}
+{doc_section}
 
 Return ONLY this JSON (no markdown, no code fences):
 {{"summary":"2-3 plain-language sentences explaining what this document demands","severity":"low|medium|high","rights":["right1","right2","right3","right4"],"enforceability_issues":["Specific illegal threat or violation found — quote exact text from document. Empty list if none found."],"action_items":[{{"days_from_now":1,"action":"specific step to take","why":"why this is critical","urgent":true}},{{"days_from_now":3,"action":"next step","why":"reason","urgent":false}},{{"days_from_now":7,"action":"final step","why":"reason","urgent":false}}],"lawyer_needed":false,"lawyer_reason":"clear explanation of whether user needs a lawyer or can self-handle with template","free_resources":[{{"name":"Resource name","url":"https://...","description":"brief description"}}],"template_response":"Full professional response letter the user can send"}}
 
 Quote real text from the document for enforceability_issues. Return valid JSON only."""
 
-    result = _generate(prompt, strict=True)
+    # Build multipart contents when an image is provided
+    if image_b64 and image_mime:
+        try:
+            image_bytes = base64.b64decode(image_b64)
+            contents = [
+                types.Part.from_bytes(data=image_bytes, mime_type=image_mime),
+                types.Part.from_text(prompt),
+            ]
+        except Exception as e:
+            print(f"[gemini] image decode error: {e}")
+            contents = prompt
+    else:
+        contents = prompt
+
+    result = _generate(contents, strict=True)
     parsed = _parse_json(result)
 
     if parsed:
@@ -199,21 +214,24 @@ def _offline_fallback(rule, governing_law, forum, forum_url, template, country_n
 
 # ── Vaakil: Follow-up Q&A ─────────────────────────────────────────────────────
 
-def answer_followup(question, doc_summary, chat_history, country_name):
+def answer_followup(question, doc_summary, chat_history, country_name, full_analysis=None):
     history_text = ""
     for msg in chat_history[-6:]:
         role = "User" if msg["role"] == "user" else "Assistant"
         history_text += f"{role}: {msg['content']}\n"
 
-    prompt = f"""You are a legal assistant helping a user in {country_name} understand their legal document.
+    context = json.dumps(full_analysis, indent=2)[:2000] if full_analysis else f"Document summary: {doc_summary}"
 
-Document summary: {doc_summary}
+    prompt = f"""You are Vaakil, a plain-language legal assistant helping a user in {country_name} understand their legal document.
+
+Document analysis context:
+{context}
 
 Previous conversation:
 {history_text}
 User: {question}
 
-Provide a helpful, accurate, plain-language answer. Be specific to {country_name} law. If you're unsure about a specific legal point, say so and recommend they verify with a qualified lawyer. Keep your response under 200 words and conversational."""
+Answer directly, empathetically, and accurately. Be specific to {country_name} law. Focus on the user's rights and practical next steps. If unsure about a specific legal point, say so. Keep response under 180 words."""
 
     result = _generate(prompt)
     return result or "I'm sorry, I couldn't process that question. Please try rephrasing it or consult a legal professional for specific advice."

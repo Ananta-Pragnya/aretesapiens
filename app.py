@@ -1,5 +1,6 @@
 import os
 import uuid
+import base64
 import threading
 from datetime import date, datetime
 from flask import Flask, render_template, request, jsonify
@@ -124,42 +125,61 @@ def api_vaakil_demo():
 def api_vaakil_analyze():
     session_id = request.form.get("session_id") or str(uuid.uuid4())
     doc_text = request.form.get("text", "").strip()
+    hint_country = request.form.get("country", "").strip().upper() or None
     filename = None
+    image_b64 = None
+    image_mime = None
 
     # Handle file upload
     if "file" in request.files:
         f = request.files["file"]
         filename = f.filename
+        mime = f.content_type or ""
         try:
             raw = f.read()
-            # Try to decode as text; for PDFs/images Gemini handles it via text extraction prompt
-            try:
-                doc_text = raw.decode("utf-8")
-            except UnicodeDecodeError:
+            if mime.startswith("image/") or filename.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+                # Pass image directly to Gemini Vision
+                image_b64 = base64.b64encode(raw).decode("utf-8")
+                image_mime = mime if mime.startswith("image/") else "image/jpeg"
+            elif mime == "application/pdf" or filename.lower().endswith(".pdf"):
+                # Pass PDF bytes to Gemini as inline data
+                image_b64 = base64.b64encode(raw).decode("utf-8")
+                image_mime = "application/pdf"
+            else:
                 try:
-                    doc_text = raw.decode("latin-1")
-                except Exception:
-                    doc_text = repr(raw[:2000])
+                    doc_text = raw.decode("utf-8")
+                except UnicodeDecodeError:
+                    doc_text = raw.decode("latin-1", errors="replace")
         except Exception as e:
             return jsonify({"error": f"Could not read file: {str(e)}"}), 400
 
-    if not doc_text:
-        return jsonify({"error": "No document text provided"}), 400
+    if not doc_text and not image_b64:
+        return jsonify({"error": "No document text or file provided"}), 400
 
-    # Step 1: Fast keyword-based detection (no API call — instant)
-    country_code, country_name, doc_type = detect_jurisdiction_fast(doc_text)
+    # Step 1: Fast keyword-based detection (instant — no API call)
+    if image_b64 and not doc_text:
+        # For pure image uploads: use hint country or default to India
+        country_code = hint_country or "IN"
+        country_name_map = {"IN": "India", "US": "United States", "GB": "United Kingdom", "AU": "Australia", "CA": "Canada", "NG": "Nigeria"}
+        country_name = country_name_map.get(country_code, "India")
+        doc_type = "other"
+    else:
+        country_code, country_name, doc_type = detect_jurisdiction_fast(doc_text)
+        if hint_country and hint_country in ("IN", "US", "GB", "AU", "CA", "NG"):
+            country_code = hint_country
+            country_name_map = {"IN": "India", "US": "United States", "GB": "United Kingdom", "AU": "Australia", "CA": "Canada", "NG": "Nigeria"}
+            country_name = country_name_map.get(country_code, country_name)
 
     # Step 2: Fetch jurisdiction ruleset from MongoDB
     jurisdiction_data = get_jurisdiction(country_code)
     if not jurisdiction_data:
-        # Fallback to India if jurisdiction not found
         jurisdiction_data = get_jurisdiction("IN") or {}
 
-    # Step 3: Analyze with Gemini using jurisdiction context
-    analysis = analyze_document(doc_text, jurisdiction_data, doc_type)
+    # Step 3: Analyze with Gemini (text or image)
+    analysis = analyze_document(doc_text, jurisdiction_data, doc_type, image_b64=image_b64, image_mime=image_mime)
 
     # Step 4: Save to MongoDB
-    doc_id = save_document(session_id, country_code, doc_type, doc_text, analysis, filename)
+    doc_id = save_document(session_id, country_code, doc_type, doc_text or f"[Image: {filename}]", analysis, filename)
 
     return jsonify({
         "session_id": session_id,
@@ -167,9 +187,9 @@ def api_vaakil_analyze():
         "country_code": country_code,
         "country_name": country_name,
         "document_type": doc_type,
-        "confidence": 0.88,
+        "confidence": 0.92 if not image_b64 else 0.85,
         "signals_found": [],
-        "issuing_authority": "Unknown",
+        "issuing_authority": analysis.get("issuing_authority", "Unknown"),
         "analysis": analysis,
     })
 
@@ -205,8 +225,8 @@ def api_vaakil_chat():
     # Get history
     history = get_chat_history(session_id)
 
-    # Get Gemini answer
-    answer = answer_followup(question, doc_summary, history[:-1], country_name)
+    # Get Gemini answer — pass full analysis context
+    answer = answer_followup(question, doc_summary, history[:-1], country_name, full_analysis=analysis)
 
     # Save assistant response
     save_chat_message(session_id, "assistant", answer)

@@ -53,7 +53,22 @@
     .page { display: none; }
     .page.active { display: block; }
 
-    /* ── Vaakil ── */
+    /* ── Vaakil layout with history sidebar ── */
+    #vaakil-outer { display: flex; height: calc(100vh - 56px); overflow: hidden; }
+    #vaakil-sidebar { width: 260px; flex-shrink: 0; background: rgba(30,41,59,0.5); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: width 0.2s; }
+    #vaakil-sidebar.collapsed { width: 0; }
+    .sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .sidebar-header h4 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); }
+    .sidebar-list { flex: 1; overflow-y: auto; padding: 8px; }
+    .sidebar-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; margin-bottom: 4px; transition: all 0.12s; }
+    .sidebar-item:hover { background: var(--surface); border-color: var(--border); }
+    .sidebar-item.active { background: var(--gold-bg); border-color: var(--gold-dim); }
+    .sidebar-item-flag { font-size: 14px; }
+    .sidebar-item-title { font-size: 12px; font-weight: 600; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar-item-sub { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+    .sidebar-new-btn { margin: 8px; padding: 8px; border-radius: 8px; border: 1px dashed var(--border); background: transparent; color: var(--text-muted); font-size: 12px; cursor: pointer; text-align: center; transition: all 0.12s; width: calc(100% - 16px); }
+    .sidebar-new-btn:hover { border-color: var(--gold); color: var(--gold); }
+    #vaakil-main { flex: 1; overflow-y: auto; }
     #vaakil-page { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
     .vaakil-hero { text-align: center; margin-bottom: 40px; }
     .vaakil-hero h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
@@ -152,6 +167,11 @@
     .chat-input-row input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); padding: 10px 14px; font-size: 13px; font-family: inherit; }
     .chat-input-row input:focus { outline: none; border-color: var(--gold); }
     .chat-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+    .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .chip { padding: 5px 12px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface); color: var(--text-dim); font-size: 11px; cursor: pointer; transition: all 0.12s; white-space: nowrap; }
+    .chip:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-bg); }
+    .image-preview { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; color: var(--text-dim); }
+    .image-preview span { color: var(--gold); font-weight: 600; }
 
     /* ── Finance ── */
     #finance-page { padding: 24px; }
@@ -269,6 +289,22 @@
 
 <!-- ══════════════════════ VAAKIL PAGE ══════════════════════ -->
 <div id="vaakil-page" class="page active">
+<div id="vaakil-outer">
+
+<!-- History Sidebar -->
+<div id="vaakil-sidebar">
+  <div class="sidebar-header">
+    <h4>📁 Past Analyses</h4>
+    <button class="btn btn-outline btn-sm" onclick="startNewAnalysis()" title="New">+</button>
+  </div>
+  <div class="sidebar-list" id="sidebar-list">
+    <div style="padding:24px 12px;text-align:center;font-size:12px;color:var(--text-muted)">No analyses yet.<br>Upload a document to start.</div>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div id="vaakil-main">
+<div id="vaakil-page-inner">
 
   <div id="vaakil-upload-section">
     <div class="vaakil-hero">
@@ -282,11 +318,16 @@
          ondragover="event.preventDefault();this.classList.add('drag-over')"
          ondragleave="this.classList.remove('drag-over')"
          ondrop="handleFileDrop(event)">
-      <div class="upload-icon">📄</div>
+      <div class="upload-icon" id="upload-icon">📄</div>
       <h3>Drop your document here</h3>
-      <p>PDF, images, Word, or text files</p>
-      <input type="file" id="file-input" style="display:none" accept=".pdf,.txt,.doc,.docx,.png,.jpg,.jpeg" onchange="handleFileSelect(event)">
+      <p>Images (PNG/JPG), PDFs, or plain text files</p>
+      <input type="file" id="file-input" style="display:none" accept=".pdf,.txt,.png,.jpg,.jpeg,.webp" onchange="handleFileSelect(event)">
       <div id="file-selected" style="display:none;color:var(--gold);font-size:13px;font-weight:600;margin-top:8px;"></div>
+    </div>
+    <div class="image-preview hidden" id="image-preview">
+      <span id="image-preview-name"></span>
+      <span style="margin-left:auto;font-size:11px;color:var(--text-muted)">Will be analyzed by Gemini Vision</span>
+      <button onclick="clearFile()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0">✕</button>
     </div>
 
     <div class="upload-or">or paste text below</div>
@@ -380,12 +421,22 @@
     </div>
     <div class="chat-doc-banner" id="chat-context">Ask anything about your document.</div>
     <div class="chat-messages" id="chat-messages"></div>
+    <div class="chip-row" id="chat-chips">
+      <button class="chip" onclick="sendChip('Can they actually arrest me for not paying?')">Can they arrest me?</button>
+      <button class="chip" onclick="sendChip('What happens if I ignore this letter completely?')">What if I ignore it?</button>
+      <button class="chip" onclick="sendChip('How do I send the template response letter?')">How to send response?</button>
+      <button class="chip" onclick="sendChip('What are my strongest legal arguments here?')">My strongest arguments</button>
+      <button class="chip" onclick="sendChip('What is the worst that can legally happen to me?')">Worst case scenario?</button>
+    </div>
     <div class="chat-input-row">
       <input type="text" id="chat-input" placeholder="Ask about your rights, deadlines, what to do next..." onkeydown="if(event.key==='Enter')sendChat()">
       <button class="btn btn-gold" onclick="sendChat()">Send</button>
     </div>
   </div>
 
+</div><!-- end vaakil-page-inner -->
+</div><!-- end vaakil-main -->
+</div><!-- end vaakil-outer -->
 </div><!-- end vaakil-page -->
 
 <!-- ══════════════════════ FINANCE PAGE ══════════════════════ -->
@@ -460,8 +511,71 @@ let currentPage = 'vaakil';
 let currentSubtab = 'feed';
 let selectedCountry = null;
 let selectedFile = null;
+let selectedFileIsImage = false;
 let currentSessionId = null;
 let currentAnalysis = null;
+
+// ══ SESSION HISTORY (localStorage) ══
+const STORAGE_KEY = 'as_vaakil_sessions_v2';
+let sessions = [];
+
+function loadSessions() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) sessions = JSON.parse(stored) || [];
+  } catch { sessions = []; }
+  renderSidebar();
+}
+
+function saveSessions() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions.slice(0, 20))); } catch {}
+}
+
+function addSession(data, filename) {
+  const a = data.analysis || data;
+  const entry = {
+    id: data.session_id || genId(),
+    ts: new Date().toLocaleString(),
+    filename: filename || 'Document',
+    country_code: data.country_code || a.country_code || 'IN',
+    country_name: data.country_name || a.country || 'Unknown',
+    doc_type: data.document_type || a.doc_type || 'other',
+    data: data
+  };
+  sessions = [entry, ...sessions.filter(s => s.id !== entry.id)];
+  saveSessions();
+  renderSidebar();
+}
+
+function renderSidebar() {
+  const el = document.getElementById('sidebar-list');
+  if (!sessions.length) {
+    el.innerHTML = '<div style="padding:24px 12px;text-align:center;font-size:12px;color:var(--text-muted)">No analyses yet.<br>Upload a document to start.</div>';
+    return;
+  }
+  const flags = {IN:'🇮🇳',US:'🇺🇸',GB:'🇬🇧',AU:'🇦🇺',CA:'🇨🇦',NG:'🇳🇬'};
+  el.innerHTML = sessions.map(s =>
+    `<div class="sidebar-item ${s.id === currentSessionId ? 'active' : ''}" onclick="loadSession('${s.id}')">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="sidebar-item-flag">${flags[s.country_code]||'🌐'}</span>
+        <span style="font-size:10px;color:var(--text-muted)">${s.country_code}</span>
+        <span style="margin-left:auto;font-size:10px;color:var(--text-muted)">${s.ts.split(',')[0]}</span>
+      </div>
+      <div class="sidebar-item-title">${esc(s.filename)}</div>
+      <div class="sidebar-item-sub">${esc(s.doc_type.replace(/_/g,' '))}</div>
+    </div>`
+  ).join('');
+}
+
+function loadSession(id) {
+  const s = sessions.find(x => x.id === id);
+  if (!s) return;
+  currentSessionId = s.id;
+  currentAnalysis = s.data;
+  renderResults(s.data);
+  showResultsSection();
+  renderSidebar();
+}
 
 // ══ PAGE NAV ══
 function showPage(page, btn) {
@@ -493,18 +607,33 @@ function selectCountry(btn) {
 
 function handleFileSelect(e) {
   const f = e.target.files[0];
-  if (f) { selectedFile = f; showFileSelected(f.name); }
+  if (f) setFile(f);
 }
 function handleFileDrop(e) {
   e.preventDefault();
   document.getElementById('drop-zone').classList.remove('drag-over');
   const f = e.dataTransfer.files[0];
-  if (f) { selectedFile = f; showFileSelected(f.name); }
+  if (f) setFile(f);
 }
-function showFileSelected(name) {
-  const el = document.getElementById('file-selected');
-  el.style.display = 'block';
-  el.textContent = '✓ ' + name;
+function setFile(f) {
+  selectedFile = f;
+  const isImg = f.type.startsWith('image/') || /\.(png|jpg|jpeg|webp)$/i.test(f.name);
+  const isPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+  selectedFileIsImage = isImg || isPdf;
+  document.getElementById('file-selected').style.display = 'block';
+  document.getElementById('file-selected').textContent = '✓ ' + f.name;
+  document.getElementById('upload-icon').textContent = isImg ? '🖼️' : (isPdf ? '📑' : '📄');
+  if (selectedFileIsImage) {
+    document.getElementById('image-preview-name').textContent = (isImg ? '🖼️ ' : '📑 ') + f.name;
+    document.getElementById('image-preview').classList.remove('hidden');
+  }
+}
+function clearFile() {
+  selectedFile = null; selectedFileIsImage = false;
+  document.getElementById('file-selected').style.display = 'none';
+  document.getElementById('file-input').value = '';
+  document.getElementById('upload-icon').textContent = '📄';
+  document.getElementById('image-preview').classList.add('hidden');
 }
 
 const LOADING_STEPS = [
@@ -540,6 +669,7 @@ async function analyzeDocument() {
     const fd = new FormData();
     if (selectedFile) fd.append('file', selectedFile);
     if (text) fd.append('text', text);
+    if (selectedCountry) fd.append('country', selectedCountry);
     fd.append('session_id', genId());
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 28000);
@@ -551,6 +681,8 @@ async function analyzeDocument() {
     if (!res.ok) { toast(data.error || 'Analysis failed'); return; }
     currentSessionId = data.session_id;
     currentAnalysis = data;
+    const fname = selectedFile ? selectedFile.name : 'Pasted Document';
+    addSession(data, fname);
     renderResults(data);
     showResultsSection();
   } catch (e) {
@@ -660,7 +792,10 @@ function showChatView() {
     document.getElementById('chat-context').textContent = '💬 ' + docType.replace(/_/g,' ') + (country ? ' — ' + country : '');
   }
   const msgs = document.getElementById('chat-messages');
-  if (!msgs.children.length) appendMsg('assistant', "I've analyzed your document. Ask me anything — rights, deadlines, what to do next, or how to send the template letter.");
+  if (!msgs.children.length) {
+    appendMsg('assistant', "I've analyzed your document. Ask me anything — about your rights, what the deadlines mean, whether you need a lawyer, or how to send the response letter.");
+    document.getElementById('chat-chips').style.display = 'flex';
+  }
   document.getElementById('chat-input').focus();
 }
 
@@ -677,10 +812,19 @@ function resetVaakil() {
   document.getElementById('file-selected').style.display = 'none';
   document.getElementById('file-input').value = '';
   document.getElementById('chat-messages').innerHTML = '';
-  selectedFile = null; currentSessionId = null; currentAnalysis = null;
+  document.getElementById('chat-chips').style.display = 'flex';
+  clearFile();
+  currentSessionId = null; currentAnalysis = null;
   document.querySelectorAll('.flag-btn').forEach(b => b.classList.remove('selected'));
   selectedCountry = null;
+  renderSidebar();
   window.scrollTo(0,0);
+}
+
+function startNewAnalysis() {
+  currentSessionId = null;
+  currentAnalysis = null;
+  resetVaakil();
 }
 
 async function sendChat() {
@@ -689,11 +833,17 @@ async function sendChat() {
   if (!q || !currentSessionId) return;
   inp.value = '';
   appendMsg('user', q);
+  document.getElementById('chat-chips').style.display = 'none';
   try {
     const res = await fetch('/api/vaakil/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({session_id:currentSessionId,question:q}) });
     const d = await res.json();
     appendMsg('assistant', d.answer || 'Could not answer that.');
   } catch { appendMsg('assistant', 'Network error.'); }
+}
+
+function sendChip(q) {
+  document.getElementById('chat-input').value = q;
+  sendChat();
 }
 
 function appendMsg(role, text) {
@@ -974,6 +1124,9 @@ function timeAgo(iso) {
 let _tt; function toast(msg) { const e=document.getElementById('toast'); e.textContent=msg; e.classList.add('show'); clearTimeout(_tt); _tt=setTimeout(()=>e.classList.remove('show'),2800); }
 
 document.getElementById('modal-overlay').addEventListener('click', e => { if(e.target===document.getElementById('modal-overlay'))closeModal(); });
+
+// Load session history on boot
+loadSessions();
 </script>
 </body>
 </html>
