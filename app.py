@@ -29,6 +29,42 @@ from jurisdiction_loader import load_jurisdictions
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "aretesapiens-dev-key")
 
+PRE_SEEDED_ANALYSIS = {
+    "country_code": "IN",
+    "country_name": "India",
+    "document_type": "debt_collection",
+    "confidence": 0.95,
+    "signals_found": ["₹ symbol", "SARFAESI reference", "Banking Ombudsman mention"],
+    "issuing_authority": "HDFC Bank Recovery Department",
+    "analysis": {
+        "summary": "This is a loan recovery notice from HDFC Bank demanding repayment of ₹2,40,000. The bank is threatening criminal proceedings and physical arrest if payment is not made within 7 days.",
+        "severity": "medium",
+        "rights": [
+            "You have the right to receive a 60-day notice under SARFAESI before the bank can take any action on secured assets",
+            "Recovery agents cannot visit your home before 7am or after 7pm under RBI guidelines",
+            "You have the right to approach the Banking Ombudsman for free grievance redressal",
+            "You can request a complete account statement showing all principal, interest, and charges"
+        ],
+        "enforceability_issues": [
+            "The letter states 'legal action will be initiated within 7 days' — SARFAESI Act requires a mandatory 60-day notice period. This 7-day threat is premature and legally incorrect.",
+            "The letter threatens 'criminal proceedings' and 'FIR' for loan default — civil debt default cannot result in arrest. This violates the RBI Fair Practices Code for Lenders (2003 circular).",
+            "The letter states agents will visit 'at any hour of the day or night' — RBI guidelines strictly prohibit recovery agent visits outside 7am–7pm."
+        ],
+        "action_items": [
+            {"days_from_now": 1, "action": "Send a written dispute letter to HDFC Bank requesting full account statement", "why": "Creates a paper trail and triggers their legal obligation to respond formally", "urgent": True},
+            {"days_from_now": 3, "action": "File a complaint with the Banking Ombudsman if the bank does not acknowledge your dispute", "why": "Free, fast, and effective — banks take RBI Ombudsman complaints very seriously", "urgent": False},
+            {"days_from_now": 7, "action": "Send final written response using the template letter below before this deadline", "why": "Silence on a legal notice can be interpreted as admission in court", "urgent": True}
+        ],
+        "lawyer_needed": False,
+        "lawyer_reason": "This is a standard recovery notice with multiple procedural violations. You can handle the initial response yourself using the template below. Only engage a lawyer if the bank proceeds to file in the Debt Recovery Tribunal (DRT).",
+        "free_resources": [
+            {"name": "Banking Ombudsman", "url": "https://bankingombudsman.rbi.org.in", "description": "Free RBI grievance redressal — file online in 10 minutes"},
+            {"name": "RBI Sachet Portal", "url": "https://sachet.rbi.org.in", "description": "Report illegal recovery practices to the RBI directly"}
+        ],
+        "template_response": "I write with reference to your notice dated [DATE] regarding loan account [NUMBER]. I wish to bring to your attention that this notice does not comply with the mandatory 60-day period required under the SARFAESI Act 2002. I also note that threatening criminal consequences for civil loan default violates the RBI Fair Practices Code for Lenders. I request a complete statement of account including all principal, interest, and charges. All further communication must be in writing to the address above. I reserve my right to approach the Banking Ombudsman if this matter is not resolved appropriately."
+    }
+}
+
 USER_ID = "demo"
 
 # Seed jurisdictions and run initial checks in background (avoids blocking gunicorn startup)
@@ -73,6 +109,13 @@ def require_premium():
     if not is_premium(USER_ID):
         return jsonify({"error": "premium_required", "message": "Financial Health requires a premium subscription."}), 403
     return None
+
+
+# ── Vaakil: Demo ──────────────────────────────────────────────────────────────
+
+@app.route("/api/vaakil/demo")
+def api_vaakil_demo():
+    return jsonify(PRE_SEEDED_ANALYSIS)
 
 
 # ── Vaakil: Document Analysis ─────────────────────────────────────────────────
@@ -121,6 +164,12 @@ def api_vaakil_analyze():
     return jsonify({
         "session_id": session_id,
         "doc_id": doc_id,
+        "country_code": country_code,
+        "country_name": country_name,
+        "document_type": doc_type,
+        "confidence": 0.88,
+        "signals_found": [],
+        "issuing_authority": "Unknown",
         "analysis": analysis,
     })
 
@@ -147,8 +196,8 @@ def api_vaakil_chat():
         return jsonify({"error": "No document found for this session"}), 404
 
     analysis = doc.get("analysis", {})
-    doc_summary = analysis.get("plain_summary", "A legal document")
-    country_name = analysis.get("country", "your country")
+    doc_summary = analysis.get("summary") or analysis.get("plain_summary", "A legal document")
+    country_name = analysis.get("country") or analysis.get("country_name", "your country")
 
     # Save user message
     save_chat_message(session_id, "user", question)

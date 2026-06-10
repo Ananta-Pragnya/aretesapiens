@@ -143,61 +143,57 @@ def analyze_document(doc_text, jurisdiction_data, doc_type):
     rights_list = "\n".join(f"- {r}" for r in doc_type_info.get("key_rights", []))
     violations_list = "\n".join(f"- {v}" for v in doc_type_info.get("common_violations", []))
     governing_law = doc_type_info.get("governing_law", "Applicable national law")
-    response_window = doc_type_info.get("response_window_days", 30)
     forum = doc_type_info.get("forum", "Relevant court or authority")
+    forum_url = doc_type_info.get("forum_url", "")
     template = doc_type_info.get("template_response", "")
     country_name = jurisdiction_data.get("country_name", "Unknown")
 
-    prompt = f"""Legal analyst for {country_name}. Analyze this {doc_type} document. Law: {governing_law}.
+    prompt = f"""You are Vaakil, an empathetic legal aid assistant for {country_name}. Analyze this {doc_type.replace('_', ' ')} document.
 
-Rights: {rights_list}
-Violations to check: {violations_list}
+Governing law: {governing_law}
+Rights the user has:
+{rights_list}
+Violations to check for:
+{violations_list}
 
 DOCUMENT:
 {doc_text[:2500]}
 
-Return ONLY this JSON (no markdown):
-{{"plain_summary":"2-3 sentences what this document demands","what_it_means":"practical situation the user is in","issues_found":[{{"severity":"high|medium|low","title":"issue title","excerpt":"exact quoted text","explanation":"why illegal/problematic"}}],"your_rights":["right1","right2","right3","right4"],"action_plan":[{{"day":"Day 1-2","action":"what to do"}},{{"day":"Day 3-4","action":"what to do"}},{{"day":"Day 5-7","action":"what to do"}}],"lawyer_needed":true,"lawyer_assessment":"can they self-handle or need lawyer","template_response":"full professional response letter"}}
+Return ONLY this JSON (no markdown, no code fences):
+{{"summary":"2-3 plain-language sentences explaining what this document demands","severity":"low|medium|high","rights":["right1","right2","right3","right4"],"enforceability_issues":["Specific illegal threat or violation found — quote exact text from document. Empty list if none found."],"action_items":[{{"days_from_now":1,"action":"specific step to take","why":"why this is critical","urgent":true}},{{"days_from_now":3,"action":"next step","why":"reason","urgent":false}},{{"days_from_now":7,"action":"final step","why":"reason","urgent":false}}],"lawyer_needed":false,"lawyer_reason":"clear explanation of whether user needs a lawyer or can self-handle with template","free_resources":[{{"name":"Resource name","url":"https://...","description":"brief description"}}],"template_response":"Full professional response letter the user can send"}}
 
-Quote real text from the document for issues_found. Return valid JSON only."""
+Quote real text from the document for enforceability_issues. Return valid JSON only."""
 
     result = _generate(prompt, strict=True)
     parsed = _parse_json(result)
 
     if parsed:
-        parsed["country"] = country_name
-        parsed["country_code"] = jurisdiction_data.get("country_code", "")
-        parsed["doc_type"] = doc_type
-        parsed["doc_type_label"] = doc_type_info.get("name", doc_type)
-        parsed["governing_law"] = governing_law
-        parsed["response_deadline_days"] = response_window
-        parsed["forum"] = forum
-        parsed["forum_url"] = doc_type_info.get("forum_url", "")
-        if not parsed.get("template_response") and template:
-            parsed["template_response"] = template
         return parsed
 
+    return _offline_fallback(doc_type_info, governing_law, forum, forum_url, template, country_name, doc_type)
+
+
+def _offline_fallback(rule, governing_law, forum, forum_url, template, country_name, doc_type):
+    """Rich offline fallback using jurisdiction data when Gemini times out."""
+    severity = "high" if doc_type in ("court_summons", "eviction_notice") else "medium"
+    forum_resource = []
+    if forum and forum_url:
+        forum_resource = [{"name": forum, "url": forum_url, "description": f"Official filing portal for {country_name} citizens."}]
+    response_window = rule.get("response_window_days", 30)
     return {
-        "country": country_name,
-        "country_code": jurisdiction_data.get("country_code", ""),
-        "doc_type": doc_type,
-        "doc_type_label": doc_type_info.get("name", doc_type),
-        "plain_summary": "This document has been received and requires your attention. Please review the details carefully.",
-        "what_it_means": "This appears to be a legal document. Review the content carefully and consider consulting a legal professional.",
-        "issues_found": [],
-        "your_rights": doc_type_info.get("key_rights", ["You have the right to respond to this document."]),
-        "action_plan": [
-            {"day": "Day 1-2", "action": "Read the document carefully and note any deadlines."},
-            {"day": "Day 3-5", "action": "Gather any relevant documents or evidence."},
-            {"day": "Day 6-7", "action": "Respond in writing before any stated deadline."}
+        "summary": f"[Offline Analysis] This appears to be a {doc_type.replace('_', ' ')} document subject to the {governing_law} of {country_name}. Review the rights and violations listed below carefully.",
+        "severity": severity,
+        "rights": rule.get("key_rights", ["You have the right to respond to this document in writing."]),
+        "enforceability_issues": [f"{v} (Common statutory violation of {governing_law})" for v in rule.get("common_violations", [])],
+        "action_items": [
+            {"days_from_now": 1, "action": f"Review your rights under the {governing_law}", "why": "Crucial statute protecting you", "urgent": True},
+            {"days_from_now": 3, "action": "Draft a formal written challenge citing your rights below", "why": "Stops automatic timelines from lapsing", "urgent": True},
+            {"days_from_now": response_window, "action": "Final legal response window closes", "why": "Must respond before this deadline to avoid default", "urgent": False},
         ],
-        "lawyer_needed": True,
-        "lawyer_assessment": "Given the nature of this document, we recommend consulting a qualified legal professional in your jurisdiction.",
-        "template_response": template,
-        "governing_law": governing_law,
-        "response_deadline_days": response_window,
-        "forum": forum,
-        "forum_url": doc_type_info.get("forum_url", "")
+        "lawyer_needed": not rule.get("self_handleable", True),
+        "lawyer_reason": f"Use the template response below to challenge this notice. Escalate to the {forum} only if the issuer does not respond within 30 days.",
+        "free_resources": forum_resource,
+        "template_response": template or f"I am writing with reference to your notice. I assert all my rights under the {governing_law} of {country_name}. Please communicate with me strictly in writing at the address above.",
     }
 
 

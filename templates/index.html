@@ -259,8 +259,8 @@
 
 <div class="analyzing-overlay" id="analyzing-overlay">
   <div class="pulse-dot"></div>
-  <div style="font-size:16px;font-weight:600;color:var(--text)">Analyzing your document...</div>
-  <div style="font-size:13px;color:var(--text-dim)">Detecting jurisdiction · Checking legal compliance · Finding issues</div>
+  <div style="font-size:16px;font-weight:600;color:var(--text)" id="overlay-title">Analyzing your document...</div>
+  <div style="font-size:13px;color:var(--text-dim)" id="overlay-step">Detecting jurisdiction · Checking legal compliance · Finding issues</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -507,6 +507,27 @@ function showFileSelected(name) {
   el.textContent = '✓ ' + name;
 }
 
+const LOADING_STEPS = [
+  'Reading legal document text...',
+  'Determining country jurisdiction...',
+  'Scanning statutory rulesets for violations...',
+  'Evaluating notice enforceability...',
+  'Drafting your template response...'
+];
+let _loadingTimer = null;
+
+function startLoadingCycle() {
+  let step = 0;
+  document.getElementById('overlay-step').textContent = LOADING_STEPS[0];
+  _loadingTimer = setInterval(() => {
+    step = (step + 1) % LOADING_STEPS.length;
+    document.getElementById('overlay-step').textContent = LOADING_STEPS[step];
+  }, 3500);
+}
+function stopLoadingCycle() {
+  if (_loadingTimer) { clearInterval(_loadingTimer); _loadingTimer = null; }
+}
+
 async function analyzeDocument() {
   const text = document.getElementById('doc-text').value.trim();
   if (!text && !selectedFile) { toast('Please paste text or upload a file'); return; }
@@ -514,6 +535,7 @@ async function analyzeDocument() {
   btn.disabled = true;
   document.getElementById('analyze-spinner').classList.remove('hidden');
   document.getElementById('analyzing-overlay').classList.add('open');
+  startLoadingCycle();
   try {
     const fd = new FormData();
     if (selectedFile) fd.append('file', selectedFile);
@@ -528,8 +550,8 @@ async function analyzeDocument() {
     const data = await res.json();
     if (!res.ok) { toast(data.error || 'Analysis failed'); return; }
     currentSessionId = data.session_id;
-    currentAnalysis = data.analysis;
-    renderResults(data.analysis);
+    currentAnalysis = data;
+    renderResults(data);
     showResultsSection();
   } catch (e) {
     if (e.name === 'AbortError') toast('Analysis timed out — try pasting shorter text');
@@ -539,36 +561,87 @@ async function analyzeDocument() {
     btn.disabled = false;
     document.getElementById('analyze-spinner').classList.add('hidden');
     document.getElementById('analyzing-overlay').classList.remove('open');
+    stopLoadingCycle();
   }
 }
 
-function renderResults(a) {
+function renderResults(data) {
+  // Support both outer envelope {country_code, analysis:{...}} and bare analysis object
+  const outer = (data && data.analysis) ? data : { analysis: data, country_code: data.country_code || data.country, country_name: data.country_name || data.country, document_type: data.doc_type };
+  const a = outer.analysis;
+  const docType = outer.document_type || a.doc_type || 'other';
+  const countryName = outer.country_name || a.country || '';
+  const countryCode = outer.country_code || a.country_code || '';
+
   const icons = {debt_collection:'🏦',eviction_notice:'🏠',court_summons:'⚖️',employment_termination:'💼',consumer_notice:'🛍️',other:'📄'};
-  document.getElementById('res-icon').textContent = icons[a.doc_type] || '📄';
-  document.getElementById('res-doctype').textContent = a.doc_type_label || a.doc_type || 'Legal Document';
-  document.getElementById('res-filename').textContent = (selectedFile ? selectedFile.name : 'Pasted Document') + ' · ' + (a.country || '');
-  document.getElementById('res-country').textContent = (a.country || '') + ' ' + getFlag(a.country_code);
-  document.getElementById('res-law').textContent = ((a.governing_law || '').substring(0, 55) + ((a.governing_law||'').length > 55 ? '…' : ''));
-  document.getElementById('res-summary').textContent = a.plain_summary || '';
+  document.getElementById('res-icon').textContent = icons[docType] || '📄';
+
+  const severityColors = {high:'var(--red)', medium:'var(--amber)', low:'var(--green)'};
+  const sev = a.severity || 'medium';
+  document.getElementById('res-doctype').innerHTML = esc(docType.replace(/_/g,' ')) +
+    `<span style="margin-left:10px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;text-transform:uppercase;background:${severityColors[sev]}22;color:${severityColors[sev]}">${sev} priority</span>`;
+  document.getElementById('res-filename').textContent = (selectedFile ? selectedFile.name : (outer.document_type ? 'Uploaded Document' : 'Demo Document')) + (countryName ? ' · ' + countryName : '');
+  document.getElementById('res-country').textContent = countryName + ' ' + getFlag(countryCode);
+  document.getElementById('res-law').textContent = outer.issuing_authority || (outer.signals_found||[]).join(', ') || '';
+
+  document.getElementById('res-summary').textContent = a.summary || a.plain_summary || '';
   document.getElementById('res-meaning').textContent = a.what_it_means || '';
 
-  const issues = a.issues_found || [];
-  document.getElementById('res-issues').innerHTML = issues.length === 0
-    ? '<div class="no-issues" style="color:var(--green);text-align:center;padding:20px"><div style="font-size:28px">✅</div><div style="font-size:14px;font-weight:600;margin-top:6px">No major violations found</div></div>'
-    : issues.map(i => `<div class="issue-item ${i.severity}"><div class="issue-header"><span class="issue-badge ${i.severity}">${i.severity}</span><span class="issue-title">${esc(i.title)}</span></div>${i.excerpt?`<div class="issue-excerpt">"${esc(i.excerpt)}"</div>`:''}<div class="issue-explanation">${esc(i.explanation)}</div></div>`).join('');
+  // enforceability_issues: string list (new format) or issues_found: object list (old format)
+  const enfIssues = a.enforceability_issues || [];
+  const structIssues = a.issues_found || [];
+  const issuesEl = document.getElementById('res-issues');
+  if (enfIssues.length > 0) {
+    issuesEl.innerHTML = enfIssues.map((issue, i) =>
+      `<div class="issue-item high" style="display:flex;gap:10px;align-items:flex-start">
+        <span style="color:var(--amber);font-size:18px;font-weight:700;line-height:1;flex-shrink:0;margin-top:2px">•</span>
+        <div style="font-size:13px;line-height:1.55;color:var(--text)">${esc(issue)}</div>
+      </div>`
+    ).join('');
+  } else if (structIssues.length > 0) {
+    issuesEl.innerHTML = structIssues.map(i => `<div class="issue-item ${i.severity}"><div class="issue-header"><span class="issue-badge ${i.severity}">${i.severity}</span><span class="issue-title">${esc(i.title)}</span></div>${i.excerpt?`<div class="issue-excerpt">"${esc(i.excerpt)}"</div>`:''}<div class="issue-explanation">${esc(i.explanation)}</div></div>`).join('');
+  } else {
+    issuesEl.innerHTML = '<div class="no-issues" style="color:var(--green);text-align:center;padding:20px"><div style="font-size:28px">✅</div><div style="font-size:14px;font-weight:600;margin-top:6px">No major violations found</div></div>';
+  }
 
-  document.getElementById('res-rights').innerHTML = (a.your_rights||[]).map(r=>`<li>${esc(r)}</li>`).join('');
-  document.getElementById('res-actions').innerHTML = (a.action_plan||[]).map(ac=>`<div class="action-item"><div class="action-day">${esc(ac.day)}</div><div class="action-text">${esc(ac.action)}</div></div>`).join('');
+  // Rights
+  const rights = a.rights || a.your_rights || [];
+  document.getElementById('res-rights').innerHTML = rights.map(r=>`<li>${esc(r)}</li>`).join('');
+
+  // Action items: new format {days_from_now, action, why, urgent} or old format {day, action}
+  const actionItems = a.action_items || a.action_plan || [];
+  document.getElementById('res-actions').innerHTML = actionItems.map(ac => {
+    if (ac.days_from_now !== undefined) {
+      const urgentBadge = ac.urgent ? `<span style="font-size:9px;background:rgba(239,68,68,0.2);color:var(--red);padding:2px 6px;border-radius:6px;font-weight:700;text-transform:uppercase;margin-left:6px">Urgent</span>` : '';
+      return `<div class="action-item">
+        <div class="action-day">Day ${ac.days_from_now}${urgentBadge}</div>
+        <div><div class="action-text">${esc(ac.action)}</div>${ac.why?`<div style="font-size:11px;color:var(--text-muted);margin-top:3px">${esc(ac.why)}</div>`:''}</div>
+      </div>`;
+    }
+    return `<div class="action-item"><div class="action-day">${esc(ac.day)}</div><div class="action-text">${esc(ac.action)}</div></div>`;
+  }).join('');
 
   const lv = document.getElementById('lawyer-verdict');
   lv.className = 'lawyer-verdict ' + (a.lawyer_needed ? 'consult' : 'self');
   lv.textContent = a.lawyer_needed ? 'Consult a Lawyer' : 'You Can Handle This';
   document.getElementById('lawyer-icon').textContent = a.lawyer_needed ? '👨‍⚖️' : '✋';
-  document.getElementById('lawyer-text').textContent = a.lawyer_assessment || '';
+  document.getElementById('lawyer-text').textContent = a.lawyer_reason || a.lawyer_assessment || '';
   document.getElementById('res-template').textContent = a.template_response || '';
 
-  const fe = document.getElementById('res-forum');
-  fe.innerHTML = a.forum ? `📍 File at: <strong>${esc(a.forum)}</strong>${a.forum_url?` — <a href="${esc(a.forum_url)}" target="_blank" rel="noopener">Visit →</a>`:''}` : '';
+  // Free resources or forum link
+  const feEl = document.getElementById('res-forum');
+  const freeRes = a.free_resources || [];
+  if (freeRes.length > 0) {
+    feEl.innerHTML = freeRes.map(r =>
+      `<a href="${esc(r.url)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;margin-right:12px;color:var(--gold);text-decoration:none;font-size:12px">
+        🔗 <strong>${esc(r.name)}</strong> — ${esc(r.description)}
+      </a>`
+    ).join('<br style="margin:4px 0">');
+  } else if (a.forum) {
+    feEl.innerHTML = `📍 File at: <strong>${esc(a.forum)}</strong>${a.forum_url?` — <a href="${esc(a.forum_url)}" target="_blank" rel="noopener" style="color:var(--gold)">Visit →</a>`:''}`;
+  } else {
+    feEl.innerHTML = '';
+  }
 }
 
 function showResultsSection() {
@@ -582,10 +655,12 @@ function showChatView() {
   document.getElementById('vaakil-results').style.display = 'none';
   document.getElementById('vaakil-chat').style.display = 'block';
   if (currentAnalysis) {
-    document.getElementById('chat-context').textContent = '💬 ' + (currentAnalysis.doc_type_label || currentAnalysis.doc_type) + ' — ' + (currentAnalysis.country || '');
+    const docType = currentAnalysis.document_type || (currentAnalysis.analysis && currentAnalysis.analysis.doc_type) || 'Document';
+    const country = currentAnalysis.country_name || (currentAnalysis.analysis && currentAnalysis.analysis.country) || '';
+    document.getElementById('chat-context').textContent = '💬 ' + docType.replace(/_/g,' ') + (country ? ' — ' + country : '');
   }
   const msgs = document.getElementById('chat-messages');
-  if (!msgs.children.length) appendMsg('assistant', "I've analyzed your document. Ask me anything — rights, deadlines, legal terms, or what to do next.");
+  if (!msgs.children.length) appendMsg('assistant', "I've analyzed your document. Ask me anything — rights, deadlines, what to do next, or how to send the template letter.");
   document.getElementById('chat-input').focus();
 }
 
@@ -632,17 +707,23 @@ function appendMsg(role, text) {
 
 async function loadDemoDocument() {
   document.getElementById('analyzing-overlay').classList.add('open');
+  document.getElementById('overlay-title').textContent = 'Loading demo analysis...';
+  document.getElementById('overlay-step').textContent = 'HDFC Bank debt recovery notice — India';
   try {
-    const res = await fetch('/api/vaakil/document/demo-session');
+    const res = await fetch('/api/vaakil/demo');
     if (res.ok) {
-      const doc = await res.json();
+      const data = await res.json();
       currentSessionId = 'demo-session';
-      currentAnalysis = doc.analysis;
-      renderResults(doc.analysis);
+      currentAnalysis = data;
+      renderResults(data);
       showResultsSection();
-    } else { toast('Demo not found — run seed demo first'); }
+    } else { toast('Demo unavailable'); }
   } catch { toast('Could not load demo'); }
-  finally { document.getElementById('analyzing-overlay').classList.remove('open'); }
+  finally {
+    document.getElementById('analyzing-overlay').classList.remove('open');
+    document.getElementById('overlay-title').textContent = 'Analyzing your document...';
+    document.getElementById('overlay-step').textContent = 'Detecting jurisdiction · Checking legal compliance · Finding issues';
+  }
 }
 
 function copyTemplate() {
