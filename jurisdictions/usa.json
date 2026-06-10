@@ -1,0 +1,121 @@
+{
+  "country_code": "US",
+  "country_name": "United States",
+  "legal_system": "common_law",
+  "languages": ["en", "es"],
+  "currency_symbols": ["$", "USD"],
+  "court_name_signals": ["District Court", "Superior Court", "County Court", "Circuit Court", "Small Claims Court", "Federal Court", "Bankruptcy Court"],
+  "authority_signals": ["IRS", "FDCPA", "CFPB", "EEOC", "FTC", "Sheriff", "Marshal", "SSA", "OSHA", "DOL"],
+  "document_types": {
+    "debt_collection": {
+      "name": "Debt Collection Notice",
+      "governing_law": "Fair Debt Collection Practices Act (FDCPA), Consumer Financial Protection Bureau (CFPB) regulations",
+      "response_window_days": 30,
+      "key_rights": [
+        "Right to request debt validation within 30 days — collector must stop until they verify",
+        "Collectors cannot call before 8am or after 9pm",
+        "You can demand in writing that a collector stop contacting you",
+        "Collectors cannot threaten arrest, sue you in the wrong court, or use false statements",
+        "Right to file complaint with CFPB at ConsumerFinance.gov — free",
+        "Statute of limitations on debt varies by state: typically 3–6 years"
+      ],
+      "common_violations": [
+        "Threatening arrest for civil debt (illegal under FDCPA Section 807)",
+        "Calling outside permitted hours or calling repeatedly to harass",
+        "Not providing written verification of debt when requested",
+        "Misrepresenting the debt amount, collector identity, or legal status",
+        "Contacting third parties (employer, family) about the debt"
+      ],
+      "forum": "CFPB Complaint Portal or Federal District Court",
+      "forum_url": "https://www.consumerfinance.gov/complaint",
+      "self_handleable": true,
+      "template_response": "Pursuant to the Fair Debt Collection Practices Act (15 U.S.C. § 1692g), I am requesting written verification of the debt referenced in your notice. I dispute this debt and request that you cease all collection activity until verification is provided. I am aware of my rights under the FDCPA and will file a complaint with the CFPB if any violations occur."
+    },
+    "eviction_notice": {
+      "name": "Eviction / Unlawful Detainer Notice",
+      "governing_law": "State landlord-tenant law (varies by state), local rent control ordinances",
+      "response_window_days": 30,
+      "key_rights": [
+        "3-day notice to pay or quit (most states) before eviction filing",
+        "Right to a court hearing before being removed",
+        "Landlord cannot conduct self-help eviction (change locks, remove belongings)",
+        "Right to contest eviction in court within the stated period",
+        "Many states have tenant legal aid organizations — often free"
+      ],
+      "common_violations": [
+        "Changing locks or removing belongings without court order (illegal in all states)",
+        "Retaliatory eviction after tenant reports housing code violations",
+        "Insufficient notice period for the eviction type",
+        "Failure to return security deposit with itemized deductions"
+      ],
+      "forum": "Local Housing Court or Small Claims Court",
+      "self_handleable": false,
+      "urgency": "high",
+      "template_response": "I acknowledge receipt of your notice dated [DATE]. I dispute the stated grounds for eviction and intend to contest this matter in court. I am aware that self-help eviction is illegal in this state and that only a court can order my removal. I request all further communication in writing."
+    },
+    "court_summons": {
+      "name": "Court Summons / Civil Complaint",
+      "governing_law": "Federal Rules of Civil Procedure or State Rules of Civil Procedure",
+      "response_window_days": 21,
+      "key_rights": [
+        "21 days to file a response (Answer) to a federal complaint; varies by state",
+        "Failure to respond results in default judgment against you",
+        "Right to legal representation; low-income individuals may qualify for free legal aid",
+        "Right to challenge jurisdiction if you were improperly served"
+      ],
+      "common_violations": [
+        "Improper service of process",
+        "Filing in a court without proper jurisdiction",
+        "Summons that does not include required information"
+      ],
+      "forum": "The issuing court (Federal or State)",
+      "self_handleable": false,
+      "urgency": "high",
+      "template_response": "I am in receipt of the summons and complaint in Case No. [NUMBER]. I intend to respond within the time allowed by law. I am seeking legal counsel to represent me in this matter."
+    },
+    "employment_termination": {
+      "name": "Termination / Separation Letter",
+      "governing_law": "WARN Act (100+ employees), FLSA, FMLA, state Employment Standards Acts, EEOC anti-discrimination laws",
+      "response_window_days": 300,
+      "key_rights": [
+        "WARN Act requires 60-day notice for mass layoffs at companies with 100+ employees",
+        "Right to file EEOC complaint within 180 days if termination was discriminatory",
+        "Right to COBRA continuation health coverage for up to 18 months",
+        "Right to unemployment benefits — file with state unemployment office immediately",
+        "Final paycheck must be delivered by next regular payday in most states"
+      ],
+      "common_violations": [
+        "Termination based on protected characteristics (race, gender, age, disability, religion)",
+        "Retaliation for whistleblowing or filing a workplace complaint",
+        "WARN Act violation — insufficient notice for mass layoff",
+        "Failure to pay out accrued vacation in states that require it"
+      ],
+      "forum": "EEOC then Federal District Court, or State Labor Board",
+      "forum_url": "https://www.eeoc.gov/filing-charge-discrimination",
+      "self_handleable": true,
+      "template_response": "I acknowledge my termination as communicated on [DATE]. I request written confirmation of my final paycheck date, COBRA eligibility information, and any accrued but unused vacation payout. I reserve all rights to challenge this termination if it was in violation of applicable law, including anti-discrimination statutes."
+    },
+    "consumer_notice": {
+      "name": "Consumer / Company Notice",
+      "governing_law": "FTC Act, state consumer protection laws, Magnuson-Moss Warranty Act",
+      "response_window_days": 30,
+      "key_rights": [
+        "Right to file complaint with FTC at ReportFraud.ftc.gov",
+        "Right to file complaint with State Attorney General",
+        "Small claims court for disputes typically up to $5,000–$15,000 (varies by state)",
+        "Written warranty must be honored under Magnuson-Moss Warranty Act",
+        "Right to chargeback through credit card company for goods/services not received"
+      ],
+      "common_violations": [
+        "Deceptive advertising or misleading product representations",
+        "Refusing to honor written warranty",
+        "Charging undisclosed fees",
+        "Bait-and-switch tactics"
+      ],
+      "forum": "FTC, State Attorney General, or Small Claims Court",
+      "forum_url": "https://reportfraud.ftc.gov",
+      "self_handleable": true,
+      "template_response": "I write to formally dispute [describe issue]. I purchased [product/service] on [date] for [amount]. The company has failed to [describe failure]. I request resolution within 14 days. If unresolved, I will file complaints with the FTC and the [State] Attorney General's Office and pursue remedies in small claims court."
+    }
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "country_code": "GB",
+  "country_name": "United Kingdom",
+  "legal_system": "common_law",
+  "languages": ["en"],
+  "currency_symbols": ["£", "GBP"],
+  "court_name_signals": ["County Court", "Magistrates Court", "High Court", "Crown Court", "Small Claims", "Employment Tribunal", "First-tier Tribunal"],
+  "authority_signals": ["FCA", "HMRC", "DVLA", "DWP", "ACAS", "ICO", "Trading Standards", "Financial Ombudsman", "Ofgem"],
+  "document_types": {
+    "debt_collection": {
+      "name": "Debt Collection / Default Notice",
+      "governing_law": "Consumer Credit Act 1974, FCA CONC (Consumer Credit sourcebook) rules, Limitation Act 1980",
+      "response_window_days": 14,
+      "key_rights": [
+        "Right to request debt verification in writing — collector must pause collection",
+        "Statute of limitations: debt becomes unenforceable after 6 years (Limitation Act 1980)",
+        "Collectors cannot harass, use deceptive language, or threaten action they cannot take",
+        "Right to a free debt relief order or IVA if debts are unmanageable",
+        "Right to complain to Financial Ombudsman Service — free",
+        "Default Notice under Consumer Credit Act must give 14 days to remedy before any action"
+      ],
+      "common_violations": [
+        "Threatening court action on a statute-barred debt (over 6 years old)",
+        "Misrepresenting the legal status of the debt or the collector's identity",
+        "Not providing required default notice under Consumer Credit Act before action",
+        "Contacting at unreasonable times or excessive frequency (FCA CONC 7.9)",
+        "Claiming the debt is more than legally owed including unauthorized charges"
+      ],
+      "forum": "Financial Ombudsman Service or County Court",
+      "forum_url": "https://www.financial-ombudsman.org.uk",
+      "self_handleable": true,
+      "template_response": "I write in response to your notice dated [DATE]. I request written verification of this debt, including the original creditor name, full account history, and proof of your authority to collect. I am aware of my rights under the FCA CONC rules and the Consumer Credit Act 1974. Please note that if this debt is statute-barred under the Limitation Act 1980, I do not acknowledge it. I reserve the right to complain to the Financial Ombudsman Service."
+    },
+    "eviction_notice": {
+      "name": "Eviction Notice (Section 21 / Section 8)",
+      "governing_law": "Housing Act 1988, Deregulation Act 2015, Renters Reform Act",
+      "response_window_days": 14,
+      "key_rights": [
+        "Section 21 notice requires minimum 2 months written notice",
+        "Section 21 is invalid if landlord has not protected deposit in a government scheme",
+        "Section 21 invalid if landlord has not provided Energy Performance Certificate and How to Rent guide",
+        "Right to challenge retaliatory eviction in court",
+        "Cannot be evicted without a court order — bailiffs require a warrant of possession"
+      ],
+      "common_violations": [
+        "Section 21 notice served without deposit protected in government scheme",
+        "Section 21 notice without providing required How to Rent guide or EPC",
+        "Attempting to evict without a court order (illegal eviction — criminal offence)",
+        "Changing locks or cutting off utilities to force tenant out (criminal offence)"
+      ],
+      "forum": "County Court",
+      "self_handleable": false,
+      "urgency": "high",
+      "template_response": "I acknowledge your notice dated [DATE]. I wish to query whether the notice is valid. I request confirmation that my tenancy deposit has been protected in a government-approved scheme and that all required documents were provided. If the notice is not valid, I require you to withdraw it. I am aware that only a court can order my removal and that any illegal eviction is a criminal offence."
+    },
+    "court_summons": {
+      "name": "County Court Claim / Legal Notice",
+      "governing_law": "Civil Procedure Rules 1998, County Courts Act 1984",
+      "response_window_days": 14,
+      "key_rights": [
+        "14 days to respond to a County Court claim (or 28 days to file a defence)",
+        "Failure to respond results in a County Court Judgment (CCJ) affecting credit",
+        "Small claims track for disputes under £10,000 — no need for a solicitor",
+        "Right to free advice from Citizens Advice Bureau",
+        "Right to apply for set-aside if judgment was entered without proper service"
+      ],
+      "common_violations": [
+        "Claim issued in wrong court or wrong track",
+        "Insufficient particulars of claim",
+        "Improper service of court documents"
+      ],
+      "forum": "County Court (Civil Procedure Rules)",
+      "self_handleable": false,
+      "urgency": "high",
+      "template_response": "I am in receipt of the County Court claim [Claim Number]. I intend to file my Acknowledgement of Service and Defence within the time allowed. I am disputing this claim in full and will file detailed grounds of defence. I request any further correspondence be directed to the address above."
+    },
+    "employment_termination": {
+      "name": "Termination / Dismissal Letter",
+      "governing_law": "Employment Rights Act 1996, ACAS Code of Practice on Disciplinary and Grievance Procedures",
+      "response_window_days": 90,
+      "key_rights": [
+        "Right to written reasons for dismissal after 2 years of employment",
+        "Right to appeal against dismissal as per ACAS Code",
+        "3 months minus one day to claim unfair dismissal at Employment Tribunal",
+        "Statutory redundancy pay: 0.5–1.5 weeks per year of service based on age",
+        "Minimum notice: 1 week per year of service (up to 12 weeks)"
+      ],
+      "common_violations": [
+        "Dismissal without following ACAS disciplinary procedure (renders it potentially unfair)",
+        "No right to be accompanied at disciplinary hearing by a colleague or union rep",
+        "Dismissal without required notice period or pay in lieu",
+        "Constructive dismissal — forced resignation due to employer's conduct"
+      ],
+      "forum": "ACAS Early Conciliation then Employment Tribunal",
+      "forum_url": "https://www.acas.org.uk/contact",
+      "self_handleable": true,
+      "template_response": "I acknowledge receipt of the letter dated [DATE] informing me of my dismissal. I request written reasons for my dismissal as required under the Employment Rights Act 1996. I wish to appeal this decision and request the appeal procedure to be initiated. I reserve my rights to bring a claim at the Employment Tribunal if my appeal is unsuccessful."
+    },
+    "consumer_notice": {
+      "name": "Consumer / Company Notice",
+      "governing_law": "Consumer Rights Act 2015, Consumer Contract Regulations 2013",
+      "response_window_days": 14,
+      "key_rights": [
+        "30-day right to a full refund for faulty goods under Consumer Rights Act 2015",
+        "Up to 6 months — trader must prove goods were not faulty at delivery",
+        "14-day cooling off period for online and distance contracts",
+        "Right to complain to Trading Standards or the relevant Ombudsman",
+        "Citizens Advice consumer helpline: 0808 223 1133 (free)"
+      ],
+      "common_violations": [
+        "Refusing refund within 30-day statutory right to reject",
+        "Attempting to charge for repair of goods that were faulty on delivery",
+        "Misrepresenting goods or services at point of sale"
+      ],
+      "forum": "Trading Standards, sector Ombudsman, or Small Claims Court",
+      "forum_url": "https://www.citizensadvice.org.uk",
+      "self_handleable": true,
+      "template_response": "I write to formally notify you of a complaint regarding [product/service] purchased on [date] for [amount]. Under the Consumer Rights Act 2015, I am entitled to [refund/repair/replacement] as the goods/services are not as described and are not fit for purpose. I require resolution within 14 days. If unresolved, I will escalate to Trading Standards and the relevant Ombudsman."
+    }
+  }
+}

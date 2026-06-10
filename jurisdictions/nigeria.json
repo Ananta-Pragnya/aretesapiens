@@ -1,0 +1,121 @@
+{
+  "country_code": "NG",
+  "country_name": "Nigeria",
+  "legal_system": "common_law",
+  "languages": ["en", "yo", "ig", "ha"],
+  "currency_symbols": ["₦", "NGN", "N"],
+  "court_name_signals": ["Federal High Court", "State High Court", "Magistrate Court", "National Industrial Court", "Court of Appeal", "Supreme Court", "Customary Court"],
+  "authority_signals": ["CBN", "FCCPC", "EFCC", "ICPC", "NDIC", "NCC", "CAC", "FIRS", "Nigeria Police", "DSS"],
+  "document_types": {
+    "debt_collection": {
+      "name": "Debt Collection / Bank Recovery Notice",
+      "governing_law": "CBN Consumer Protection Framework 2016, FCCPC Act 2022, Banks and Other Financial Institutions Act",
+      "response_window_days": 21,
+      "key_rights": [
+        "21 days to respond to a formal demand notice before legal action",
+        "Right to request a full statement of account from the bank",
+        "CBN Consumer Protection Framework prohibits harassment and false statements",
+        "Right to file complaint with CBN Consumer Protection Department — free",
+        "Right to complain to FCCPC (Federal Competition and Consumer Protection Commission)",
+        "Debt collectors cannot threaten imprisonment for civil debt under Nigerian law"
+      ],
+      "common_violations": [
+        "Threatening criminal prosecution or arrest for civil bank debt",
+        "Recovery agents using harassment, threats, or visiting family members",
+        "Not providing adequate notice before asset recovery action",
+        "Adding undisclosed charges or misrepresenting amount owed",
+        "Contacting employer or publicizing debt without court order"
+      ],
+      "forum": "CBN Consumer Protection Department or Federal High Court",
+      "forum_url": "https://www.cbn.gov.ng/supervisory/consumer.asp",
+      "self_handleable": true,
+      "template_response": "I write in response to your notice dated [DATE] regarding account [NUMBER]. I request a complete and certified statement of account showing all principal, interest, and charges. I am aware of my rights under the CBN Consumer Protection Framework and the FCCPC Act 2022. I dispute the amount claimed and require proper documentation. I will approach the CBN Consumer Protection Department if this matter is not addressed appropriately."
+    },
+    "eviction_notice": {
+      "name": "Eviction / Quit Notice",
+      "governing_law": "Recovery of Premises Act, Rent Control and Recovery of Residential Premises Laws (state specific)",
+      "response_window_days": 7,
+      "key_rights": [
+        "Monthly tenancy: 7 days minimum notice to quit",
+        "Annual tenancy: 6 months minimum notice to quit",
+        "Landlord must obtain court order before forcible eviction",
+        "Right to challenge notice validity in court",
+        "Cannot be removed by landlord without valid court order and bailiff"
+      ],
+      "common_violations": [
+        "Forcible eviction without obtaining a court order (criminal offence)",
+        "Removing tenant belongings without court order",
+        "Cutting off electricity, water, or access to force vacation",
+        "Insufficient notice period for the type of tenancy"
+      ],
+      "forum": "Magistrate Court (Rent Division) or State High Court",
+      "self_handleable": false,
+      "urgency": "high",
+      "template_response": "I acknowledge receipt of your quit notice dated [DATE]. I contest the validity of this notice on the grounds that [insufficient notice period / notice not properly served]. I am aware that you cannot effect my eviction without a court order from the Magistrate Court. I request that you withdraw this notice or proceed through proper legal channels."
+    },
+    "court_summons": {
+      "name": "Court Summons / Writ of Summons",
+      "governing_law": "Sheriffs and Civil Process Act, Federal High Court Civil Procedure Rules, State High Court Rules",
+      "response_window_days": 30,
+      "key_rights": [
+        "30 days to enter appearance and file defence in Federal High Court",
+        "Failure to respond results in judgment in default",
+        "Right to legal representation",
+        "Right to challenge improper service of process",
+        "Right to free legal aid through Legal Aid Council of Nigeria"
+      ],
+      "common_violations": [
+        "Summons not properly served per Sheriffs and Civil Process Act",
+        "Wrong court jurisdiction",
+        "Insufficient particulars of claim"
+      ],
+      "forum": "The issuing court (Federal or State High Court)",
+      "self_handleable": false,
+      "urgency": "high",
+      "template_response": "I acknowledge receipt of the Writ of Summons in Suit No. [NUMBER]. I intend to enter appearance and file my Statement of Defence within the time prescribed. I dispute the claim and will respond fully through proper legal channels."
+    },
+    "employment_termination": {
+      "name": "Termination / Retrenchment Letter",
+      "governing_law": "Labour Act Cap L1 LFN 2004, National Industrial Court Act, Trade Disputes Act",
+      "response_window_days": 30,
+      "key_rights": [
+        "Minimum one month notice or one month pay in lieu for monthly paid employees",
+        "Right to challenge wrongful termination at National Industrial Court",
+        "Entitlement to accrued leave allowance and outstanding wages at termination",
+        "Trade union members have additional protections against anti-union dismissal",
+        "Right to severance pay if redundancy is genuine and procedurally correct"
+      ],
+      "common_violations": [
+        "Termination without minimum notice or pay in lieu under Labour Act",
+        "Non-payment of accrued wages, leave allowance, or gratuity",
+        "Termination for trade union activity or protected whistleblowing",
+        "Constructive dismissal through unbearable working conditions"
+      ],
+      "forum": "National Industrial Court of Nigeria",
+      "self_handleable": true,
+      "template_response": "I acknowledge my termination as communicated on [DATE]. Under the Labour Act Cap L1, I am entitled to one month notice or pay in lieu. I request immediate payment of all outstanding wages, accrued leave allowance, and any gratuity owed. I reserve my right to approach the National Industrial Court if my entitlements are not settled within 14 days."
+    },
+    "consumer_notice": {
+      "name": "Consumer / Company Notice",
+      "governing_law": "Federal Competition and Consumer Protection Act 2018 (FCCPA), FCCPC Act 2022",
+      "response_window_days": 21,
+      "key_rights": [
+        "Right to file complaint with FCCPC — Federal Competition and Consumer Protection Commission",
+        "Right to fair hearing and redress for defective goods and services",
+        "Companies must provide clear warranty terms and honor them",
+        "Right to seek compensation for damage caused by defective products",
+        "FCCPC Consumer Protection Helpline: 0700-FCCPC-NG"
+      ],
+      "common_violations": [
+        "False or deceptive representation of goods or services",
+        "Failure to honor warranty claims",
+        "Charging for services not rendered",
+        "Unconscionable conduct in consumer transactions"
+      ],
+      "forum": "FCCPC or Federal High Court",
+      "forum_url": "https://www.fccpc.gov.ng",
+      "self_handleable": true,
+      "template_response": "I write to formally notify you of a consumer complaint under the Federal Competition and Consumer Protection Act 2018. I purchased [product/service] on [date] for [amount]. The [product/service] fails to conform to what was represented and is defective. I demand [refund/replacement/repair] within 14 days. Failing resolution, I will file a formal complaint with the FCCPC."
+    }
+  }
+}

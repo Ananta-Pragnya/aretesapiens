@@ -1,0 +1,123 @@
+{
+  "country_code": "AU",
+  "country_name": "Australia",
+  "legal_system": "common_law",
+  "languages": ["en"],
+  "currency_symbols": ["A$", "AUD", "$"],
+  "court_name_signals": ["Local Court", "Magistrates Court", "District Court", "Supreme Court", "VCAT", "NCAT", "QCAT", "SAT", "ACAT", "Federal Court"],
+  "authority_signals": ["ATO", "ASIC", "ACCC", "Fair Work Commission", "AFCA", "VCAT", "NCAT", "Centrelink", "Services Australia"],
+  "document_types": {
+    "debt_collection": {
+      "name": "Debt Collection Notice",
+      "governing_law": "Australian Consumer Law (ACL), ASIC Act 2001, National Credit Code",
+      "response_window_days": 30,
+      "key_rights": [
+        "Right to request written verification of the debt",
+        "Debt collectors cannot contact you at unreasonable times or with unreasonable frequency",
+        "Limitation period: typically 6 years from when debt became due",
+        "Right to complain to Australian Financial Complaints Authority (AFCA) — free",
+        "National Debt Helpline: 1800 007 007 (free financial counselling)",
+        "Collectors cannot make false or misleading representations about the debt"
+      ],
+      "common_violations": [
+        "Threatening legal action the collector cannot or does not intend to take",
+        "Contacting third parties about the debt without authority",
+        "Attempting to collect a statute-barred debt without disclosing this",
+        "Using coercive, harassing, or unconscionable conduct (breach of ACL)",
+        "Not identifying themselves as a debt collector"
+      ],
+      "forum": "AFCA (Australian Financial Complaints Authority) or Local Court",
+      "forum_url": "https://www.afca.org.au",
+      "self_handleable": true,
+      "template_response": "I write in response to your notice dated [DATE]. I request written verification of this debt, including the name of the original creditor, the amount alleged to be owed, and proof of your authority to collect this debt. I am aware of the Australian Consumer Law and ASIC debt collection guidelines. I reserve the right to lodge a complaint with AFCA if collection conduct is in breach of applicable guidelines."
+    },
+    "eviction_notice": {
+      "name": "Eviction / Termination of Tenancy Notice",
+      "governing_law": "State Residential Tenancies Acts (VIC/NSW/QLD/SA/WA/TAS/ACT/NT)",
+      "response_window_days": 28,
+      "key_rights": [
+        "Landlord must provide written notice with the reason for termination",
+        "Notice periods vary by state and reason: typically 14–90 days",
+        "Right to challenge termination at relevant tribunal (VCAT, NCAT, QCAT)",
+        "Cannot be forcibly removed without a tribunal order",
+        "Bond must be lodged with state bond authority and returned unless deductions justified"
+      ],
+      "common_violations": [
+        "Inadequate notice period for the reason given",
+        "Retaliatory eviction after tenant exercises their rights",
+        "Landlord entering without required notice (24-48 hours in most states)",
+        "Wrongful claim against bond without supporting evidence"
+      ],
+      "forum": "State tenancy tribunal (VCAT/NCAT/QCAT depending on state)",
+      "self_handleable": false,
+      "urgency": "high",
+      "template_response": "I acknowledge receipt of your notice dated [DATE]. I dispute the validity of this notice and intend to apply to the relevant tribunal for a hearing. I request that you refrain from any further action until the matter is resolved by the tribunal. I am aware that you cannot forcibly remove me without a tribunal order."
+    },
+    "court_summons": {
+      "name": "Court Summons / Statement of Claim",
+      "governing_law": "Federal Court Rules, Uniform Civil Procedure Rules (state), Local Court Rules",
+      "response_window_days": 28,
+      "key_rights": [
+        "28 days to file a Defence in most jurisdictions",
+        "Failure to respond results in default judgment",
+        "Small claims track (under $20,000 in most states) — simplified process",
+        "Right to free legal advice from Community Legal Centres",
+        "Right to apply to set aside default judgment if proper service not completed"
+      ],
+      "common_violations": [
+        "Improper service of documents",
+        "Claim filed in wrong jurisdiction",
+        "Claim is statute-barred"
+      ],
+      "forum": "Local Court / Magistrates Court or Federal Court",
+      "self_handleable": false,
+      "urgency": "high",
+      "template_response": "I acknowledge receipt of the Statement of Claim [Claim Number]. I intend to file my Defence within the required timeframe. I dispute the claim in its entirety and will provide detailed grounds in my Defence."
+    },
+    "employment_termination": {
+      "name": "Termination / Redundancy Letter",
+      "governing_law": "Fair Work Act 2009, National Employment Standards (NES)",
+      "response_window_days": 21,
+      "key_rights": [
+        "21 days from dismissal to lodge an Unfair Dismissal application with Fair Work Commission",
+        "Redundancy pay based on years of service under NES",
+        "Minimum notice periods based on length of service (1–5 weeks)",
+        "Right to ask employer for reasons for dismissal in writing",
+        "Right to bring a support person to any dismissal meeting",
+        "General Protections claim if dismissed for exercising a workplace right"
+      ],
+      "common_violations": [
+        "Dismissal without valid reason and proper procedure (harsh, unjust, or unreasonable)",
+        "Failure to pay correct redundancy entitlements under NES",
+        "Insufficient notice or notice pay",
+        "Dismissal related to taking leave, union activity, or making a workplace complaint"
+      ],
+      "forum": "Fair Work Commission",
+      "forum_url": "https://www.fwc.gov.au",
+      "self_handleable": true,
+      "template_response": "I acknowledge my termination communicated on [DATE]. I request written reasons for my termination. I note that I have [X] years of service and am entitled to [notice period/redundancy pay] under the National Employment Standards and the Fair Work Act 2009. I reserve my rights to lodge a claim with the Fair Work Commission within 21 days."
+    },
+    "consumer_notice": {
+      "name": "Consumer / Company Notice",
+      "governing_law": "Australian Consumer Law (ACL), Competition and Consumer Act 2010",
+      "response_window_days": 30,
+      "key_rights": [
+        "Consumer guarantees under ACL cannot be excluded by contract",
+        "Right to repair, replacement, or refund for major failures",
+        "Right to complain to ACCC or state consumer affairs agency",
+        "Small claims at state tribunal for disputes typically under $20,000–$100,000",
+        "Right to a refund if goods do not match description or are not of acceptable quality"
+      ],
+      "common_violations": [
+        "Attempting to exclude statutory consumer guarantees",
+        "Misleading or deceptive conduct in trade or commerce",
+        "Unconscionable conduct",
+        "Unfair contract terms in standard form consumer contracts"
+      ],
+      "forum": "ACCC, State Consumer Affairs, or relevant Tribunal",
+      "forum_url": "https://www.accc.gov.au/consumers/problems-with-products-and-services",
+      "self_handleable": true,
+      "template_response": "I write to formally notify you of a dispute under the Australian Consumer Law. I purchased [product/service] on [date] for [amount]. The [product/service] fails to meet the consumer guarantees under the ACL. I require [repair/replacement/refund] within 14 days. If unresolved, I will lodge a complaint with the ACCC and the relevant state consumer tribunal."
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import os
+import json
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
@@ -8,18 +9,192 @@ load_dotenv()
 _client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 MODEL = "gemini-2.0-flash"
 _CONFIG = types.GenerateContentConfig(temperature=0.3)
+_CONFIG_STRICT = types.GenerateContentConfig(temperature=0.0)
 
 
-def _generate(prompt):
+def _generate(prompt, strict=False):
     try:
+        cfg = _CONFIG_STRICT if strict else _CONFIG
         response = _client.models.generate_content(
-            model=MODEL, contents=prompt, config=_CONFIG
+            model=MODEL, contents=prompt, config=cfg
         )
         return response.text.strip()
     except Exception as e:
         print(f"[gemini] error: {e}")
         return None
 
+
+def _parse_json(text):
+    if not text:
+        return None
+    text = text.strip()
+    if text.startswith("```"):
+        lines = text.split("\n")
+        text = "\n".join(lines[1:-1]) if len(lines) > 2 else text
+    try:
+        return json.loads(text)
+    except Exception:
+        return None
+
+
+# ── Vaakil: Jurisdiction Detection ────────────────────────────────────────────
+
+def detect_jurisdiction(doc_text):
+    """Returns {"country_code": "IN", "country_name": "India", "doc_type": "debt_collection", "confidence": 0.95}"""
+    prompt = f"""You are a legal document classifier. Analyze the following document text and identify:
+1. The country it is from (based on currency symbols, court names, regulatory bodies, legal citations, or any country-specific references)
+2. The document type
+
+Return ONLY a JSON object with these exact fields:
+{{
+  "country_code": "two-letter ISO code e.g. IN, US, GB, AU, CA, NG",
+  "country_name": "full country name",
+  "doc_type": "one of: debt_collection, eviction_notice, court_summons, employment_termination, consumer_notice, other",
+  "doc_type_label": "human-readable label e.g. Debt Recovery Notice",
+  "confidence": 0.0 to 1.0,
+  "detection_clues": ["list of text clues that helped identify country and type"]
+}}
+
+Document text:
+---
+{doc_text[:3000]}
+---
+
+Return only the JSON, no markdown, no explanation."""
+
+    result = _generate(prompt, strict=True)
+    parsed = _parse_json(result)
+    if parsed and "country_code" in parsed:
+        return parsed
+    return {
+        "country_code": "IN",
+        "country_name": "India",
+        "doc_type": "other",
+        "doc_type_label": "Legal Document",
+        "confidence": 0.3,
+        "detection_clues": []
+    }
+
+
+# ── Vaakil: Document Analysis ─────────────────────────────────────────────────
+
+def analyze_document(doc_text, jurisdiction_data, doc_type):
+    """Full legal analysis using jurisdiction ruleset from MongoDB."""
+    doc_type_info = jurisdiction_data.get("document_types", {}).get(doc_type, {})
+
+    rights_list = "\n".join(f"- {r}" for r in doc_type_info.get("key_rights", []))
+    violations_list = "\n".join(f"- {v}" for v in doc_type_info.get("common_violations", []))
+    governing_law = doc_type_info.get("governing_law", "Applicable national law")
+    response_window = doc_type_info.get("response_window_days", 30)
+    forum = doc_type_info.get("forum", "Relevant court or authority")
+    template = doc_type_info.get("template_response", "")
+    country_name = jurisdiction_data.get("country_name", "Unknown")
+
+    prompt = f"""You are an expert legal analyst for {country_name}. A user has uploaded a legal document and needs a plain-language analysis.
+
+GOVERNING LAW: {governing_law}
+DOCUMENT TYPE: {doc_type}
+RESPONSE WINDOW: {response_window} days
+
+KNOWN RIGHTS IN THIS JURISDICTION:
+{rights_list}
+
+COMMON VIOLATIONS TO LOOK FOR:
+{violations_list}
+
+DOCUMENT TEXT:
+---
+{doc_text[:4000]}
+---
+
+Analyze this document thoroughly and return ONLY a JSON object with this exact structure:
+{{
+  "plain_summary": "2-3 sentence plain English summary of what this document is and what it demands",
+  "what_it_means": "3-4 sentence explanation of the practical situation the user is in",
+  "issues_found": [
+    {{
+      "severity": "high|medium|low",
+      "title": "brief title of the issue",
+      "excerpt": "the exact problematic text quoted from the document (keep short)",
+      "explanation": "why this is an issue and what law it may violate"
+    }}
+  ],
+  "your_rights": ["list of 4-6 specific rights the user has in this situation"],
+  "action_plan": [
+    {{"day": "Day 1-2", "action": "specific action to take"}},
+    {{"day": "Day 3-4", "action": "specific action to take"}},
+    {{"day": "Day 5-7", "action": "specific action to take"}}
+  ],
+  "lawyer_needed": true or false,
+  "lawyer_assessment": "honest 2-3 sentence assessment: can they handle this themselves or do they need a lawyer, and why",
+  "template_response": "a complete professional response letter the user can send"
+}}
+
+Find REAL issues in the document text — quote actual problematic phrases. If the document appears legitimate and has no violations, say so in issues_found as an empty array and explain in plain_summary. Return only valid JSON."""
+
+    result = _generate(prompt, strict=True)
+    parsed = _parse_json(result)
+
+    if parsed:
+        parsed["country"] = country_name
+        parsed["country_code"] = jurisdiction_data.get("country_code", "")
+        parsed["doc_type"] = doc_type
+        parsed["doc_type_label"] = doc_type_info.get("name", doc_type)
+        parsed["governing_law"] = governing_law
+        parsed["response_deadline_days"] = response_window
+        parsed["forum"] = forum
+        parsed["forum_url"] = doc_type_info.get("forum_url", "")
+        if not parsed.get("template_response") and template:
+            parsed["template_response"] = template
+        return parsed
+
+    return {
+        "country": country_name,
+        "country_code": jurisdiction_data.get("country_code", ""),
+        "doc_type": doc_type,
+        "doc_type_label": doc_type_info.get("name", doc_type),
+        "plain_summary": "This document has been received and requires your attention. Please review the details carefully.",
+        "what_it_means": "This appears to be a legal document. Review the content carefully and consider consulting a legal professional.",
+        "issues_found": [],
+        "your_rights": doc_type_info.get("key_rights", ["You have the right to respond to this document."]),
+        "action_plan": [
+            {"day": "Day 1-2", "action": "Read the document carefully and note any deadlines."},
+            {"day": "Day 3-5", "action": "Gather any relevant documents or evidence."},
+            {"day": "Day 6-7", "action": "Respond in writing before any stated deadline."}
+        ],
+        "lawyer_needed": True,
+        "lawyer_assessment": "Given the nature of this document, we recommend consulting a qualified legal professional in your jurisdiction.",
+        "template_response": template,
+        "governing_law": governing_law,
+        "response_deadline_days": response_window,
+        "forum": forum,
+        "forum_url": doc_type_info.get("forum_url", "")
+    }
+
+
+# ── Vaakil: Follow-up Q&A ─────────────────────────────────────────────────────
+
+def answer_followup(question, doc_summary, chat_history, country_name):
+    history_text = ""
+    for msg in chat_history[-6:]:
+        role = "User" if msg["role"] == "user" else "Assistant"
+        history_text += f"{role}: {msg['content']}\n"
+
+    prompt = f"""You are a legal assistant helping a user in {country_name} understand their legal document.
+
+Document summary: {doc_summary}
+
+Previous conversation:
+{history_text}
+User: {question}
+
+Provide a helpful, accurate, plain-language answer. Be specific to {country_name} law. If you're unsure about a specific legal point, say so and recommend they verify with a qualified lawyer. Keep your response under 200 words and conversational."""
+
+    result = _generate(prompt)
+    return result or "I'm sorry, I couldn't process that question. Please try rephrasing it or consult a legal professional for specific advice."
+
+
+# ── Financial Health: Gemini Explanations ─────────────────────────────────────
 
 def explain_bill_spike(bill_name, history, spike_pct):
     history_text = ", ".join(f"{h['month']}: ₹{h['amount']}" for h in history[-6:])

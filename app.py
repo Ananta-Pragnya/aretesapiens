@@ -1,6 +1,7 @@
 import os
+import uuid
 import threading
-from datetime import date
+from datetime import date, datetime
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 
@@ -12,18 +13,26 @@ from mongo_client import (
     get_warranties, get_warranty, add_warranty, delete_warranty,
     get_groceries, get_grocery, add_grocery_item, add_grocery_price, delete_grocery,
     get_alerts, save_alert, seed_demo,
+    is_premium, activate_trial,
+    save_document, get_document, get_session_document,
+    save_chat_message, get_chat_history,
+    get_jurisdiction,
 )
 from gemini_client import (
     explain_subscription, explain_bill_spike,
     explain_warranty, explain_grocery_trend,
+    detect_jurisdiction, analyze_document, answer_followup,
 )
 from checker import check_all
+from jurisdiction_loader import load_jurisdictions
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "aretesapiens-dev-key")
 
 USER_ID = "demo"
 
+# Seed jurisdictions and run initial checks at startup
+load_jurisdictions()
 threading.Thread(target=lambda: check_all(USER_ID), daemon=True).start()
 
 
@@ -34,15 +43,132 @@ def index():
     return render_template("index.html")
 
 
+# ── Premium Gate ───────────────────────────────────────────────────────────────
+
+@app.route("/api/premium-status")
+def api_premium_status():
+    return jsonify({"is_premium": is_premium(USER_ID)})
+
+
+@app.route("/api/activate-trial", methods=["POST"])
+def api_activate_trial():
+    activate_trial(USER_ID)
+    return jsonify({"status": "ok", "is_premium": True})
+
+
+def require_premium():
+    if not is_premium(USER_ID):
+        return jsonify({"error": "premium_required", "message": "Financial Health requires a premium subscription."}), 403
+    return None
+
+
+# ── Vaakil: Document Analysis ─────────────────────────────────────────────────
+
+@app.route("/api/vaakil/analyze", methods=["POST"])
+def api_vaakil_analyze():
+    session_id = request.form.get("session_id") or str(uuid.uuid4())
+    doc_text = request.form.get("text", "").strip()
+    filename = None
+
+    # Handle file upload
+    if "file" in request.files:
+        f = request.files["file"]
+        filename = f.filename
+        try:
+            raw = f.read()
+            # Try to decode as text; for PDFs/images Gemini handles it via text extraction prompt
+            try:
+                doc_text = raw.decode("utf-8")
+            except UnicodeDecodeError:
+                try:
+                    doc_text = raw.decode("latin-1")
+                except Exception:
+                    doc_text = repr(raw[:2000])
+        except Exception as e:
+            return jsonify({"error": f"Could not read file: {str(e)}"}), 400
+
+    if not doc_text:
+        return jsonify({"error": "No document text provided"}), 400
+
+    # Step 1: Detect jurisdiction
+    detection = detect_jurisdiction(doc_text)
+    country_code = detection.get("country_code", "IN")
+    doc_type = detection.get("doc_type", "other")
+
+    # Step 2: Fetch jurisdiction ruleset from MongoDB
+    jurisdiction_data = get_jurisdiction(country_code)
+    if not jurisdiction_data:
+        # Fallback to India if jurisdiction not found
+        jurisdiction_data = get_jurisdiction("IN") or {}
+
+    # Step 3: Analyze with Gemini using jurisdiction context
+    analysis = analyze_document(doc_text, jurisdiction_data, doc_type)
+
+    # Step 4: Save to MongoDB
+    doc_id = save_document(session_id, country_code, doc_type, doc_text, analysis, filename)
+
+    return jsonify({
+        "session_id": session_id,
+        "doc_id": doc_id,
+        "analysis": analysis,
+    })
+
+
+@app.route("/api/vaakil/document/<session_id>")
+def api_vaakil_get_document(session_id):
+    doc = get_session_document(session_id)
+    if not doc:
+        return jsonify({"error": "not found"}), 404
+    return jsonify(doc)
+
+
+@app.route("/api/vaakil/chat", methods=["POST"])
+def api_vaakil_chat():
+    d = request.json or {}
+    session_id = d.get("session_id")
+    question = d.get("question", "").strip()
+
+    if not session_id or not question:
+        return jsonify({"error": "session_id and question required"}), 400
+
+    doc = get_session_document(session_id)
+    if not doc:
+        return jsonify({"error": "No document found for this session"}), 404
+
+    analysis = doc.get("analysis", {})
+    doc_summary = analysis.get("plain_summary", "A legal document")
+    country_name = analysis.get("country", "your country")
+
+    # Save user message
+    save_chat_message(session_id, "user", question)
+
+    # Get history
+    history = get_chat_history(session_id)
+
+    # Get Gemini answer
+    answer = answer_followup(question, doc_summary, history[:-1], country_name)
+
+    # Save assistant response
+    save_chat_message(session_id, "assistant", answer)
+
+    return jsonify({"answer": answer})
+
+
 # ── Subscriptions ──────────────────────────────────────────────────────────────
 
 @app.route("/api/subscriptions", methods=["GET"])
 def api_get_subs():
+    gate = require_premium()
+    if gate:
+        return gate
     return jsonify(get_subscriptions(USER_ID))
 
 
 @app.route("/api/subscriptions", methods=["POST"])
 def api_add_sub():
+    gate = require_premium()
+    if gate:
+        return gate
     d = request.json or {}
     required = ["name", "amount", "next_renewal"]
     if not all(d.get(k) for k in required):
@@ -63,12 +189,18 @@ def api_add_sub():
 
 @app.route("/api/subscriptions/<doc_id>", methods=["DELETE"])
 def api_del_sub(doc_id):
+    gate = require_premium()
+    if gate:
+        return gate
     delete_subscription(doc_id)
     return jsonify({"status": "ok"})
 
 
 @app.route("/api/subscriptions/<doc_id>/explain", methods=["POST"])
 def api_explain_sub(doc_id):
+    gate = require_premium()
+    if gate:
+        return gate
     sub = get_subscription(doc_id)
     if not sub:
         return jsonify({"error": "not found"}), 404
@@ -84,11 +216,17 @@ def api_explain_sub(doc_id):
 
 @app.route("/api/bills", methods=["GET"])
 def api_get_bills():
+    gate = require_premium()
+    if gate:
+        return gate
     return jsonify(get_bills(USER_ID))
 
 
 @app.route("/api/bills", methods=["POST"])
 def api_add_bill():
+    gate = require_premium()
+    if gate:
+        return gate
     d = request.json or {}
     if not d.get("name"):
         return jsonify({"error": "name required"}), 400
@@ -106,12 +244,18 @@ def api_add_bill():
 
 @app.route("/api/bills/<doc_id>", methods=["DELETE"])
 def api_del_bill(doc_id):
+    gate = require_premium()
+    if gate:
+        return gate
     delete_bill(doc_id)
     return jsonify({"status": "ok"})
 
 
 @app.route("/api/bills/<doc_id>/reading", methods=["POST"])
 def api_add_bill_reading(doc_id):
+    gate = require_premium()
+    if gate:
+        return gate
     d = request.json or {}
     if not d.get("month") or d.get("amount") is None:
         return jsonify({"error": "month and amount required"}), 400
@@ -121,6 +265,9 @@ def api_add_bill_reading(doc_id):
 
 @app.route("/api/bills/<doc_id>/explain", methods=["POST"])
 def api_explain_bill(doc_id):
+    gate = require_premium()
+    if gate:
+        return gate
     bill = get_bill(doc_id)
     if not bill:
         return jsonify({"error": "not found"}), 404
@@ -139,11 +286,17 @@ def api_explain_bill(doc_id):
 
 @app.route("/api/warranties", methods=["GET"])
 def api_get_warranties():
+    gate = require_premium()
+    if gate:
+        return gate
     return jsonify(get_warranties(USER_ID))
 
 
 @app.route("/api/warranties", methods=["POST"])
 def api_add_warranty():
+    gate = require_premium()
+    if gate:
+        return gate
     d = request.json or {}
     required = ["item_name", "purchase_date", "warranty_expiry", "purchase_price"]
     if not all(d.get(k) for k in required):
@@ -163,12 +316,18 @@ def api_add_warranty():
 
 @app.route("/api/warranties/<doc_id>", methods=["DELETE"])
 def api_del_warranty(doc_id):
+    gate = require_premium()
+    if gate:
+        return gate
     delete_warranty(doc_id)
     return jsonify({"status": "ok"})
 
 
 @app.route("/api/warranties/<doc_id>/explain", methods=["POST"])
 def api_explain_warranty(doc_id):
+    gate = require_premium()
+    if gate:
+        return gate
     w = get_warranty(doc_id)
     if not w:
         return jsonify({"error": "not found"}), 404
@@ -185,15 +344,20 @@ def api_explain_warranty(doc_id):
 
 @app.route("/api/groceries", methods=["GET"])
 def api_get_groceries():
+    gate = require_premium()
+    if gate:
+        return gate
     return jsonify(get_groceries(USER_ID))
 
 
 @app.route("/api/groceries", methods=["POST"])
 def api_add_grocery():
+    gate = require_premium()
+    if gate:
+        return gate
     d = request.json or {}
     if not d.get("item_name"):
         return jsonify({"error": "item_name required"}), 400
-    from datetime import datetime
     initial_price = d.get("price", 0)
     prices = [{"date": datetime.utcnow().strftime("%Y-%m-%d"), "price": float(initial_price)}]
     add_grocery_item(
@@ -209,16 +373,21 @@ def api_add_grocery():
 
 @app.route("/api/groceries/<doc_id>", methods=["DELETE"])
 def api_del_grocery(doc_id):
+    gate = require_premium()
+    if gate:
+        return gate
     delete_grocery(doc_id)
     return jsonify({"status": "ok"})
 
 
 @app.route("/api/groceries/<doc_id>/price", methods=["POST"])
 def api_add_grocery_price(doc_id):
+    gate = require_premium()
+    if gate:
+        return gate
     d = request.json or {}
     if d.get("price") is None:
         return jsonify({"error": "price required"}), 400
-    from datetime import datetime
     date_str = d.get("date", datetime.utcnow().strftime("%Y-%m-%d"))
     add_grocery_price(doc_id, date_str, d["price"])
     return jsonify({"status": "ok"})
@@ -226,6 +395,9 @@ def api_add_grocery_price(doc_id):
 
 @app.route("/api/groceries/<doc_id>/explain", methods=["POST"])
 def api_explain_grocery(doc_id):
+    gate = require_premium()
+    if gate:
+        return gate
     item = get_grocery(doc_id)
     if not item:
         return jsonify({"error": "not found"}), 404
@@ -233,21 +405,30 @@ def api_explain_grocery(doc_id):
     return jsonify({"explanation": text})
 
 
-# ── Core ───────────────────────────────────────────────────────────────────────
+# ── Core (premium-gated) ───────────────────────────────────────────────────────
 
 @app.route("/api/alerts")
 def api_get_alerts():
+    gate = require_premium()
+    if gate:
+        return gate
     return jsonify(get_alerts(USER_ID, limit=30))
 
 
 @app.route("/api/run-checks", methods=["POST"])
 def api_run_checks():
+    gate = require_premium()
+    if gate:
+        return gate
     threading.Thread(target=lambda: check_all(USER_ID), daemon=True).start()
     return jsonify({"status": "running"})
 
 
 @app.route("/api/risk-score")
 def api_risk_score():
+    gate = require_premium()
+    if gate:
+        return gate
     today = date.today()
 
     bills = get_bills(USER_ID)

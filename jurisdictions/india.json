@@ -1,0 +1,123 @@
+{
+  "country_code": "IN",
+  "country_name": "India",
+  "legal_system": "common_law",
+  "languages": ["en", "hi", "ta", "te", "bn", "mr"],
+  "currency_symbols": ["₹", "INR", "Rs"],
+  "court_name_signals": ["District Court", "High Court", "Supreme Court", "NCDRC", "DCDRF", "Lok Adalat", "Sessions Court", "Magistrate Court"],
+  "authority_signals": ["RBI", "SEBI", "Income Tax", "GST", "Police", "Collector", "SARFAESI", "Banking Ombudsman", "IRDAI", "CCI"],
+  "document_types": {
+    "debt_collection": {
+      "name": "Debt Recovery / Loan Notice",
+      "governing_law": "SARFAESI Act 2002, RBI Fair Practices Code, Recovery of Debts and Bankruptcy Act 1993",
+      "response_window_days": 60,
+      "key_rights": [
+        "Right to receive 60-day notice before any action under SARFAESI Act",
+        "Right to file objection with the bank within 30 days of SARFAESI notice",
+        "Recovery agents cannot visit before 7am or after 7pm",
+        "Recovery agents cannot use abusive language or threaten family members",
+        "Right to approach Banking Ombudsman for free grievance redressal",
+        "Civil loan default cannot result in arrest — threatening arrest is illegal",
+        "Right to request a complete account statement showing all charges"
+      ],
+      "common_violations": [
+        "Threatening arrest or criminal action for civil loan default",
+        "Recovery agents contacting at odd hours (before 7am or after 7pm)",
+        "Not providing mandatory 60-day SARFAESI notice before taking action",
+        "Misrepresenting the outstanding amount or adding undisclosed charges",
+        "Contacting family members, employer, or neighbors about the debt",
+        "Using threatening or abusive language in written communication"
+      ],
+      "forum": "Banking Ombudsman or Debt Recovery Tribunal",
+      "forum_url": "https://bankingombudsman.rbi.org.in",
+      "self_handleable": true,
+      "template_response": "I write with reference to your notice dated [DATE] regarding loan account [NUMBER]. I wish to bring to your attention that this notice does not comply with the mandatory 60-day period required under the SARFAESI Act 2002. I also note that threatening criminal consequences for civil loan default violates the RBI Fair Practices Code. I request a complete statement of account including all principal, interest, and charges. All further communication must be in writing. I reserve my right to approach the Banking Ombudsman if this matter is not resolved appropriately."
+    },
+    "eviction_notice": {
+      "name": "Eviction / Vacation Notice",
+      "governing_law": "Transfer of Property Act 1882, State Rent Control Acts, Model Tenancy Act 2021",
+      "response_window_days": 15,
+      "key_rights": [
+        "Landlord must give at least 15 days notice for month-to-month tenancy",
+        "Cannot be evicted without a court order in most states",
+        "Right to challenge notice in Rent Control Court",
+        "Landlord cannot cut off electricity, water, or access to force eviction",
+        "Right to receive security deposit back within reasonable time after vacating"
+      ],
+      "common_violations": [
+        "Cutting off electricity or water supply to force vacating",
+        "Locking out tenant without a court order",
+        "Notice period shorter than legally required",
+        "Attempting eviction without registering rental agreement"
+      ],
+      "forum": "Rent Control Court or Civil Court",
+      "self_handleable": false,
+      "urgency": "high",
+      "template_response": "I acknowledge receipt of your notice dated [DATE]. I wish to state that I contest this notice as it does not comply with the requirements under the applicable Rent Control Act. I request you to refrain from any action that interferes with my peaceful possession of the premises. Any unlawful eviction attempt will be resisted through appropriate legal channels."
+    },
+    "court_summons": {
+      "name": "Court Summons / Legal Notice",
+      "governing_law": "Code of Civil Procedure 1908, Legal Services Authorities Act 1987",
+      "response_window_days": 30,
+      "key_rights": [
+        "Right to file written reply within 30 days of receiving summons",
+        "Right to legal representation — free legal aid available if income below threshold",
+        "Ignoring a summons results in ex-parte order against you",
+        "Right to inspect court documents related to your case",
+        "Right to free legal aid via District Legal Services Authority"
+      ],
+      "common_violations": [
+        "Summons not properly served as per CPC requirements",
+        "Insufficient time given for response",
+        "Summons from wrong court without jurisdiction"
+      ],
+      "forum": "The issuing court",
+      "self_handleable": false,
+      "urgency": "high",
+      "template_response": "I acknowledge receipt of the summons in Case No. [NUMBER]. I intend to file my written statement within the time granted by the court. I request reasonable time to engage legal counsel."
+    },
+    "employment_termination": {
+      "name": "Termination / Retrenchment Letter",
+      "governing_law": "Industrial Disputes Act 1947, Shops and Establishments Act, Payment of Gratuity Act 1972",
+      "response_window_days": 30,
+      "key_rights": [
+        "One month notice or pay in lieu for employees with over 1 year of service",
+        "Retrenchment compensation of 15 days wages per completed year of service",
+        "Right to challenge wrongful termination at Labour Court within 3 years",
+        "Gratuity entitlement after 5 years of continuous service",
+        "Right to provident fund settlement and final salary within stipulated time"
+      ],
+      "common_violations": [
+        "Termination without required notice period or pay in lieu",
+        "Non-payment of gratuity after 5 years of service",
+        "Termination for trade union activity or protected reasons",
+        "Not following termination procedure under Standing Orders"
+      ],
+      "forum": "Labour Court or Industrial Tribunal",
+      "self_handleable": true,
+      "template_response": "I acknowledge receipt of the termination letter dated [DATE]. I wish to state that I have completed [X] years of service and am entitled to [notice pay/gratuity/retrenchment compensation] as per applicable law. I request a complete and proper settlement of all dues within the statutory period."
+    },
+    "consumer_notice": {
+      "name": "Consumer / Company Notice",
+      "governing_law": "Consumer Protection Act 2019, Consumer Protection (E-Commerce) Rules 2020",
+      "response_window_days": 30,
+      "key_rights": [
+        "Right to file complaint at District Consumer Commission for claims up to ₹50 lakh",
+        "State Commission handles claims ₹50 lakh to ₹2 crore",
+        "National Commission for claims above ₹2 crore",
+        "National Consumer Helpline: 1800-11-4000 (free)",
+        "Right to claim compensation for deficiency of service and mental harassment"
+      ],
+      "common_violations": [
+        "Refusing refund for defective product",
+        "Not honoring warranty or guarantee claims",
+        "Misrepresentation in advertising or at point of sale",
+        "Unfair trade practices or restrictive trade practices"
+      ],
+      "forum": "District Consumer Disputes Redressal Commission",
+      "forum_url": "https://consumerhelpline.gov.in",
+      "self_handleable": true,
+      "template_response": "I write to formally notify you that I am a consumer who purchased [PRODUCT/SERVICE] on [DATE] for [AMOUNT]. The [product/service] has [describe defect/deficiency]. I request you to remedy this within 15 days failing which I will file a complaint before the District Consumer Disputes Redressal Commission under the Consumer Protection Act 2019."
+    }
+  }
+}

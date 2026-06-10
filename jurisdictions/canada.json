@@ -1,0 +1,120 @@
+{
+  "country_code": "CA",
+  "country_name": "Canada",
+  "legal_system": "common_law",
+  "languages": ["en", "fr"],
+  "currency_symbols": ["C$", "CAD", "$"],
+  "court_name_signals": ["Provincial Court", "Superior Court", "Small Claims Court", "LTB", "RTB", "Court of Queen's Bench", "Court of Appeal", "Federal Court"],
+  "authority_signals": ["CRA", "CRTC", "FCAC", "OHRC", "LTB", "RTB", "Service Canada", "ESDC", "CBSA"],
+  "document_types": {
+    "debt_collection": {
+      "name": "Debt Collection Notice",
+      "governing_law": "Provincial Collection and Debt Settlement Services Acts, federal Limitation Periods",
+      "response_window_days": 30,
+      "key_rights": [
+        "Right to request verification of the debt in writing",
+        "Collectors cannot contact you on Sundays, statutory holidays, or outside 7am–9pm",
+        "Limitation period: typically 2 years in Ontario, BC, and Alberta from acknowledgment",
+        "Right to complain to provincial consumer protection office — free",
+        "Financial Consumer Agency of Canada (FCAC) handles federally regulated creditors",
+        "Right to have a credit counselling agency negotiate on your behalf"
+      ],
+      "common_violations": [
+        "Contacting outside permitted hours or on prohibited days",
+        "Attempting to collect a limitation-expired debt without disclosure",
+        "Threatening legal action that the collector cannot or does not intend to take",
+        "Communicating with employer, family, or third parties without authorization",
+        "Using threatening, profane, or intimidating language"
+      ],
+      "forum": "Provincial Consumer Protection Office or Small Claims Court",
+      "forum_url": "https://www.canada.ca/en/financial-consumer-agency.html",
+      "self_handleable": true,
+      "template_response": "I write in response to your collection notice dated [DATE]. I request written verification of this debt including the original creditor, full account history, and proof of your licence to collect in this province. I am aware of my rights under the [Province] Collection and Debt Settlement Services Act. Please cease all collection activity until verification is provided. I reserve the right to file a complaint with the provincial consumer protection office."
+    },
+    "eviction_notice": {
+      "name": "Eviction / Termination of Tenancy Notice",
+      "governing_law": "Provincial Residential Tenancies Acts (Ontario RTA, BC RTA, Alberta RTA, etc.)",
+      "response_window_days": 10,
+      "key_rights": [
+        "Ontario: must file with Landlord and Tenant Board (LTB) — cannot self-evict",
+        "BC: must apply to Residential Tenancy Branch (RTB)",
+        "Right to dispute notice at provincial tribunal",
+        "Landlord cannot change locks or remove belongings without tribunal order",
+        "Notice periods: non-payment 14 days (ON), cause termination 20 days (ON)"
+      ],
+      "common_violations": [
+        "Self-help eviction — changing locks without tribunal order (illegal in all provinces)",
+        "Harassment or intimidation to force tenant out",
+        "Retaliatory notice after tenant complaint to housing authority",
+        "Insufficient notice period for the grounds stated"
+      ],
+      "forum": "LTB (Ontario), RTB (BC), or provincial equivalent",
+      "self_handleable": false,
+      "urgency": "high",
+      "template_response": "I acknowledge receipt of your notice dated [DATE]. I dispute the validity of this notice and intend to file a response with the [LTB/RTB]. I am aware that only a tribunal order can authorize my eviction, and any self-help eviction attempt is illegal. I request all future communications be in writing."
+    },
+    "court_summons": {
+      "name": "Court Summons / Statement of Claim",
+      "governing_law": "Provincial Rules of Civil Procedure, Federal Courts Rules",
+      "response_window_days": 20,
+      "key_rights": [
+        "20–30 days to file a Statement of Defence in most provinces",
+        "Failure to respond results in default judgment",
+        "Small Claims Court for disputes up to $25,000–$35,000 depending on province",
+        "Right to legal aid if eligible",
+        "Right to challenge improper service"
+      ],
+      "common_violations": [
+        "Improper service of process",
+        "Claim filed in wrong jurisdiction",
+        "Limitation period has expired"
+      ],
+      "forum": "Provincial Superior Court or Small Claims Court",
+      "self_handleable": false,
+      "urgency": "high",
+      "template_response": "I acknowledge receipt of the Statement of Claim in File No. [NUMBER]. I intend to file a Statement of Defence within the time prescribed. I dispute the claim in its entirety."
+    },
+    "employment_termination": {
+      "name": "Termination / Layoff Letter",
+      "governing_law": "Canada Labour Code (federally regulated), Provincial Employment Standards Acts",
+      "response_window_days": 60,
+      "key_rights": [
+        "Minimum notice: 1 week per year of service up to 8 weeks (Ontario ESA)",
+        "Severance pay in Ontario: 1 week per year for 5+ years at employer with $2.5M payroll",
+        "Right to challenge wrongful termination — no minimum length of service required for human rights claims",
+        "Must file employment standards complaint within 2 years of violation",
+        "Right to EI (Employment Insurance) — apply immediately after termination"
+      ],
+      "common_violations": [
+        "Insufficient notice or termination pay under provincial Employment Standards Act",
+        "Non-payment of severance where legally required",
+        "Termination in violation of Human Rights Code (discriminatory dismissal)",
+        "Constructive dismissal without adequate notice"
+      ],
+      "forum": "Provincial Employment Standards Branch or Superior Court",
+      "self_handleable": true,
+      "template_response": "I acknowledge my termination communicated on [DATE]. I request written confirmation of my entitlements including notice pay, severance (if applicable), and vacation pay owed. I note I have [X] years of service and am entitled to minimum notice under the [Provincial] Employment Standards Act. I reserve all rights including the right to file an employment standards complaint."
+    },
+    "consumer_notice": {
+      "name": "Consumer / Company Notice",
+      "governing_law": "Competition Act, provincial Consumer Protection Acts, CPA Ontario",
+      "response_window_days": 30,
+      "key_rights": [
+        "10-day cooling off period for door-to-door sales and certain contracts",
+        "Right to chargeback through credit card for goods/services not received",
+        "Right to complain to provincial consumer protection office",
+        "Small Claims Court for disputes under $25,000–$35,000",
+        "Right to dispute inaccurate information on credit report"
+      ],
+      "common_violations": [
+        "False or misleading advertising",
+        "Unfair practices including unconscionable representation",
+        "Not honoring warranty claims",
+        "Charging for unauthorized services"
+      ],
+      "forum": "Provincial Consumer Protection Office or Small Claims Court",
+      "self_handleable": true,
+      "template_response": "I write to formally dispute [describe issue] under the [Provincial] Consumer Protection Act. I purchased [product/service] on [date]. The [product/service] fails to conform to what was represented. I request [refund/resolution] within 14 days or I will file a complaint with the provincial consumer protection office."
+    }
+  }
+}
